@@ -1,0 +1,37 @@
+"use client";
+
+import { useRef, useEffect } from "react";
+import { motion } from "framer-motion";
+import ThemeSwitcher from "./ThemeSwitcher";
+
+type Props = {
+  children: React.ReactNode;
+  hideThemeSwitcher?: boolean;
+};
+
+export default function AppShell({ children, hideThemeSwitcher = false }: Props) {
+  const constraintsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    document.documentElement.classList.add("hydrated");
+  }, []);
+
+  return (
+    <div ref={constraintsRef} className="relative min-h-dvh w-full overflow-x-hidden">
+      {/* Theme switcher — subtle, top-right */}
+      {!hideThemeSwitcher && (
+        <div className="fixed right-4 top-4 z-30" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+          <ThemeSwitcher />
+        </div>
+      )}
+
+      {/* Content container — mobile-first max-width */}
+      <motion.div
+        className="relative z-10 mx-auto flex min-h-dvh max-w-app flex-col px-5 pb-8"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 16px) + 16px)" }}
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
+}

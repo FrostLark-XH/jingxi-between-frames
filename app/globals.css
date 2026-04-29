@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Default theme fallback (雾灰暗房) — overridden by ThemeProvider via JS */
+:root {
+  /* ── Base values (overridden per theme by JS) ── */
+  --bg-base: #16181B;
+  --bg-soft: #1D2024;
+  --accent: #B07A5A;
+  --accent-soft: #8F5A47;
+  --accent-glow: rgba(143,90,71,0.28);
+  --text-primary: #F3EFE7;
+  --status-error: #C77B6B;
+
+  /* ── RGB variants for Tailwind opacity-modifier compatibility ── */
+  --bg-base-rgb: 22 24 27;
+  --bg-soft-rgb: 29 32 36;
+  --accent-rgb: 176 122 90;
+  --text-primary-rgb: 243 239 231;
+  --status-error-rgb: 199 123 107;
+
+  /* ── Surfaces — bg-base tinted with accent ── */
+  --surface-1: color-mix(in srgb, var(--bg-base) 94%, var(--accent) 6%);
+  --surface-2: color-mix(in srgb, var(--bg-soft) 90%, var(--accent) 10%);
+  --surface-active: color-mix(in srgb, var(--bg-soft) 82%, var(--accent) 18%);
+
+  /* ── Borders — surface blended with accent ── */
+  --border-soft: color-mix(in srgb, var(--surface-1) 88%, var(--accent) 12%);
+  --border-active: color-mix(in srgb, var(--accent) 42%, transparent);
+  --border-warm: color-mix(in srgb, var(--border-active) 55%, transparent);
+
+  /* ── Text — text-primary at decreasing opacity ── */
+  --text-secondary: color-mix(in srgb, var(--text-primary) 70%, transparent);
+  --text-muted: color-mix(in srgb, var(--text-primary) 45%, transparent);
+
+  /* ── Overlay — bg-base at reduced opacity ── */
+  --surface-overlay: color-mix(in srgb, var(--bg-base) 88%, transparent);
+
+  /* ── Shadows ── */
+  --shadow-glow: 0 0 20px var(--accent-glow);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC",
+    sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 2px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 1px;
+}
+
+html:not(.hydrated) [style*="opacity:0"],
+html:not(.hydrated) [style*="opacity: 0"] {
+  opacity: 1 !important;
+}
+
+::selection {
+  background: var(--accent-glow);
+  color: var(--text-primary);
+}
+
+::placeholder {
+  color: var(--text-primary);
+  opacity: 0.12;
+}
