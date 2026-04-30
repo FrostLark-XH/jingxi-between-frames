@@ -14,8 +14,7 @@ import ArchivePanel from "./ArchivePanel";
 type AggregatedData =
   | { type: "year"; data: { year: string; frameCount: number; topTags: string[]; recentFrames: MemoryFrame[] }[] }
   | { type: "month"; data: { yearMonth: string; year: string; month: string; frameCount: number; activeDays: number; topTags: string[]; recentFrames: MemoryFrame[] }[] }
-  | { type: "day"; data: { date: string; frameCount: number; topTags: string[]; frames: MemoryFrame[] }[] }
-  | { type: "fragment"; data: { frames: MemoryFrame[] } };
+  | { type: "day"; data: { date: string; frameCount: number; topTags: string[]; frames: MemoryFrame[] }[] };
 
 type Props = {
   timeScale: TimeScale;
@@ -28,6 +27,7 @@ type Props = {
   onFrameClick: (frame: MemoryFrame) => void;
   onFrameClose: () => void;
   onDelete: (id: string) => void;
+  onUpdate: (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary">>) => void;
   onRestore: (id: string) => void;
   onPermanentlyDelete: (id: string) => void;
   onBack: () => void;
@@ -45,6 +45,7 @@ export default function FilmPage({
   onFrameClick,
   onFrameClose,
   onDelete,
+  onUpdate,
   onRestore,
   onPermanentlyDelete,
   onBack,
@@ -55,14 +56,10 @@ export default function FilmPage({
       ? aggregatedData.data.length > 0
       : aggregatedData.type === "month"
         ? aggregatedData.data.length > 0
-        : aggregatedData.type === "day"
-          ? aggregatedData.data.length > 0
-          : aggregatedData.type === "fragment"
-            ? aggregatedData.data.frames.length > 0
-            : false;
+        : aggregatedData.data.length > 0;
 
   // Ensure current scale is available; fall back to "day" if not
-  const scaleMinFrames: Record<TimeScale, number> = { year: 30, month: 10, day: 0, fragment: 0 };
+  const scaleMinFrames: Record<TimeScale, number> = { year: 30, month: 10, day: 0 };
   const effectiveScale = totalFrameCount >= scaleMinFrames[timeScale] ? timeScale : "day";
 
   useEffect(() => {
@@ -124,7 +121,7 @@ export default function FilmPage({
       )}
 
       {/* Detail overlay */}
-      <FrameDetailOverlay frame={selectedFrame} onClose={onFrameClose} onDelete={onDelete} />
+      <FrameDetailOverlay frame={selectedFrame} onClose={onFrameClose} onDelete={onDelete} onUpdate={onUpdate} />
     </div>
   );
 }

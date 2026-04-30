@@ -99,6 +99,7 @@ type Action =
   | { type: "SET_MONTH"; month: string }
   | { type: "SET_DATE"; date: string }
   | { type: "ADD_FRAME"; frame: MemoryFrame }
+  | { type: "UPDATE_FRAME"; id: string; changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary">> }
   | { type: "DELETE_FRAME"; id: string }
   | { type: "RESTORE_FRAME"; id: string }
   | { type: "PERMANENTLY_DELETE_FRAME"; id: string }
@@ -125,6 +126,22 @@ function reducer(state: AppState, action: Action): AppState {
         selectedDate: action.frame.date,
         selectedMonth: action.frame.date.substring(0, 7).replace(".", ""),
         selectedYear: action.frame.date.split(".")[0],
+      };
+    }
+    case "UPDATE_FRAME": {
+      const nextFrames = state.frames.map((f) =>
+        f.id === action.id
+          ? { ...f, ...action.changes, updatedAt: new Date().toISOString() }
+          : f
+      );
+      saveFrames(nextFrames);
+      return {
+        ...state,
+        frames: nextFrames,
+        selectedFrame:
+          state.selectedFrame?.id === action.id
+            ? { ...state.selectedFrame, ...action.changes, updatedAt: new Date().toISOString() }
+            : state.selectedFrame,
       };
     }
     case "DELETE_FRAME": {
@@ -186,6 +203,12 @@ export default function useAppState() {
     []
   );
 
+  const updateFrame = useCallback(
+    (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary">>) =>
+      dispatch({ type: "UPDATE_FRAME", id, changes }),
+    []
+  );
+
   const deleteFrame = useCallback(
     (id: string) => dispatch({ type: "DELETE_FRAME", id }),
     []
@@ -225,13 +248,6 @@ export default function useAppState() {
         return { type: "month" as const, data: getAggregatedMonthData(active) };
       case "day":
         return { type: "day" as const, data: getAggregatedDayData(active) };
-      case "fragment":
-        return {
-          type: "fragment" as const,
-          data: {
-            frames: active.filter((f) => f.date === selectedDate),
-          },
-        };
     }
   })();
 
@@ -245,6 +261,7 @@ export default function useAppState() {
     aggregatedData,
     setTimeScale,
     addFrame,
+    updateFrame,
     deleteFrame,
     restoreFrame,
     permanentlyDeleteFrame,

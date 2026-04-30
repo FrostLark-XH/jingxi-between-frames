@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
-import { X, Copy, Type, Mic, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { toJSON, toMarkdown, toTXT } from "@/lib/exportFrames";
+import { X, Copy, Type, Mic, ChevronDown, ChevronUp, Trash2, Edit3, Check, Plus, Download, AlertTriangle } from "lucide-react";
 
 type Props = {
   frame: MemoryFrame | null;
   onClose: () => void;
   onDelete: (id: string) => void;
+  onUpdate: (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary">>) => void;
 };
 
 const STATUS_LABEL: Record<MemoryFrame["status"], string> = {
@@ -17,17 +19,63 @@ const STATUS_LABEL: Record<MemoryFrame["status"], string> = {
   developing: "显影中",
 };
 
-export default function FrameDetailOverlay({ frame, onClose, onDelete }: Props) {
+const EXPORT_BTNS = [
+  { label: "JSON", fn: (frames: MemoryFrame[]) => toJSON(frames, { content: true, tags: true, summary: true }) },
+  { label: "MD", fn: (frames: MemoryFrame[]) => toMarkdown(frames, { content: true, tags: true, summary: true }) },
+  { label: "TXT", fn: (frames: MemoryFrame[]) => toTXT(frames, { content: true, tags: true, summary: true }) },
+];
+
+export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState("");
+  const [isEditingTags, setIsEditingTags] = useState(false);
+  const [newTagValue, setNewTagValue] = useState("");
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const newTagInputRef = useRef<HTMLInputElement>(null);
+
+  // Track whether content or tags have been modified since opening
+  const originalContent = useRef("");
+  const originalTags = useRef<string[]>([]);
+
+  useEffect(() => {
+    if (frame) {
+      originalContent.current = frame.content;
+      originalTags.current = [...frame.tags];
+    }
+  }, [frame?.id]);
+
+  const hasContentChanged = isEditing && editContent.trim() !== originalContent.current;
+  // Tags are saved immediately on add/remove, so check based on edit mode state
+  const hasUnsavedChanges = hasContentChanged;
 
   // Reset state when switching between frames
   useEffect(() => {
     setConfirmingDelete(false);
     setExpanded(false);
     setCopied(null);
+    setIsEditing(false);
+    setIsEditingTags(false);
+    setNewTagValue("");
+    setShowUnsavedWarning(false);
   }, [frame?.id]);
+
+  // Auto-focus textarea when entering edit mode
+  useEffect(() => {
+    if (isEditing && editTextareaRef.current) {
+      editTextareaRef.current.focus();
+    }
+  }, [isEditing]);
+
+  // Auto-focus new tag input
+  useEffect(() => {
+    if (newTagValue === "" && newTagInputRef.current) {
+      newTagInputRef.current.focus();
+    }
+  }, [newTagValue]);
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard?.writeText(text);
@@ -41,12 +89,81 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete }: Props) 
     onClose();
   };
 
+  const handleStartEdit = () => {
+    if (!frame) return;
+    setEditContent(frame.content);
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!frame || !editContent.trim()) return;
+    onUpdate(frame.id, { content: editContent.trim() });
+    originalContent.current = editContent.trim();
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditContent("");
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    if (!frame) return;
+    const newTags = frame.tags.filter((t) => t !== tag);
+    onUpdate(frame.id, { tags: newTags });
+    originalTags.current = newTags;
+  };
+
+  const handleAddTag = () => {
+    if (!frame || !newTagValue.trim()) return;
+    const trimmed = newTagValue.trim();
+    if (frame.tags.includes(trimmed)) {
+      setNewTagValue("");
+      return;
+    }
+    const newTags = [...frame.tags, trimmed];
+    onUpdate(frame.id, { tags: newTags });
+    originalTags.current = newTags;
+    setNewTagValue("");
+  };
+
+  const handleExportSingle = (fn: (frames: MemoryFrame[]) => void) => {
+    if (!frame) return;
+    fn([frame]);
+  };
+
+  const handleRequestClose = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setShowUnsavedWarning(true);
+    } else {
+      onClose();
+    }
+  }, [hasUnsavedChanges, onClose]);
+
+  const handleDiscardAndClose = () => {
+    setIsEditing(false);
+    setEditContent("");
+    setShowUnsavedWarning(false);
+    onClose();
+  };
+
+  const handleSaveAndClose = () => {
+    if (!frame || !editContent.trim()) return;
+    onUpdate(frame.id, { content: editContent.trim() });
+    originalContent.current = editContent.trim();
+    setIsEditing(false);
+    setShowUnsavedWarning(false);
+    onClose();
+  };
+
+  if (!frame) return null;
+
   const statusColor =
-    frame?.status === "saved" ? "var(--text-muted)"
-    : frame?.status === "organizing" ? "var(--accent-soft)"
+    frame.status === "saved" ? "var(--text-muted)"
+    : frame.status === "organizing" ? "var(--accent-soft)"
     : "var(--accent-glow)";
 
-  const contentText = frame?.content ?? "";
+  const contentText = frame.content;
   const isLong = contentText.length > 200;
 
   return (
@@ -57,7 +174,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete }: Props) 
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          onClick={onClose}
+          onClick={handleRequestClose}
           className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto px-5 py-20 backdrop-blur-sm"
           style={{ background: "var(--surface-overlay)" }}
         >
@@ -72,29 +189,28 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete }: Props) 
               borderRadius: "8px",
               borderLeftColor: "var(--border-warm)",
               borderLeftWidth: "1px",
-              background: "var(--bg-soft)",
+              background: "var(--bg-base)",
             }}
           >
-            {/* Close */}
+            {/* Close — subtle circle */}
             <button
-              onClick={onClose}
-              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center border border-border-subtle text-text-muted transition-colors hover:text-text-primary"
-              style={{ borderRadius: "8px" }}
+              onClick={handleRequestClose}
+              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-text-muted/30 transition-colors hover:text-text-muted/60"
             >
-              <X size={14} />
+              <X size={15} />
             </button>
 
-            {/* Header */}
-            <div className="mb-5 flex items-start justify-between pr-10">
+            {/* Header — film-strip numbering feel */}
+            <div className="mb-6 flex items-start justify-between pr-10">
               <div>
-                <div className="font-mono text-xs tracking-wider text-text-secondary">
+                <div className="font-mono text-[10px] tracking-[0.2em] text-text-muted/30">
+                  NO.{formatFrameNumber(frame.frameIndex)}
+                </div>
+                <div className="mt-1 font-mono text-xs tracking-wider text-text-secondary">
                   {frame.date} · {frame.time}
                 </div>
-                <div className="mt-1 font-mono text-[10px] text-text-muted/50">
-                  第 {formatFrameNumber(frame.frameIndex)} 帧
-                </div>
                 <div className="mt-1 font-mono text-[10px] text-text-muted/30">
-                  创建于 {frame.createdAt}
+                  {frame.createdAt}
                 </div>
               </div>
               <div className="flex items-center gap-3 text-[10px]" style={{ color: statusColor }}>
@@ -108,61 +224,146 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete }: Props) 
               </div>
             </div>
 
-            {/* Full content */}
+            {/* Content — editable */}
             <div className="mb-5">
-              <p
-                className={`text-base leading-relaxed text-text-primary ${
-                  !expanded && isLong ? "line-clamp-4" : ""
-                }`}
-              >
-                {contentText}
-              </p>
-              {isLong && (
-                <button
-                  onClick={() => setExpanded(!expanded)}
-                  className="mt-2 flex items-center gap-1 text-xs text-text-muted/50 transition-colors hover:text-text-muted"
-                >
-                  {expanded ? (
-                    <>
-                      收起 <ChevronUp size={10} />
-                    </>
-                  ) : (
-                    <>
-                      展开全文 <ChevronDown size={10} />
-                    </>
+              {isEditing ? (
+                <div className="space-y-2">
+                  <textarea
+                    ref={editTextareaRef}
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    rows={6}
+                    className="w-full resize-none border border-border-subtle bg-bg-soft/60 px-4 py-3 text-base leading-relaxed text-text-primary focus:border-accent/25 focus:outline-none"
+                    style={{ borderRadius: "6px" }}
+                    placeholder="编辑这一帧…"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSaveEdit}
+                      disabled={!editContent.trim()}
+                      className="flex items-center gap-1 rounded px-3 py-1.5 text-xs transition-colors hover:opacity-80 disabled:opacity-30"
+                      style={{ background: "var(--accent)", color: "var(--bg-base)", borderRadius: "4px" }}
+                    >
+                      <Check size={10} />
+                      保存
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="rounded border border-border-subtle px-3 py-1.5 text-xs text-text-muted transition-colors hover:text-text-secondary"
+                      style={{ borderRadius: "4px" }}
+                    >
+                      取消
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p
+                    className={`text-base leading-relaxed text-text-primary ${
+                      !expanded && isLong ? "line-clamp-4" : ""
+                    }`}
+                  >
+                    {contentText}
+                  </p>
+                  {isLong && (
+                    <button
+                      onClick={() => setExpanded(!expanded)}
+                      className="mt-2 flex items-center gap-1 text-xs text-text-muted/50 transition-colors hover:text-text-muted"
+                    >
+                      {expanded ? (
+                        <>
+                          收起 <ChevronUp size={10} />
+                        </>
+                      ) : (
+                        <>
+                          展开全文 <ChevronDown size={10} />
+                        </>
+                      )}
+                    </button>
                   )}
-                </button>
+                </>
               )}
             </div>
 
             {/* Summary */}
             <div
               className="mb-5 border border-border-subtle px-4 py-3"
-              style={{ borderRadius: "8px", background: "var(--bg-base)", opacity: 0.6 }}
+              style={{ borderRadius: "8px", background: "var(--surface-1)", opacity: 0.6 }}
             >
               <p className="text-xs leading-relaxed text-text-muted/50">
                 {frame.summary}
               </p>
             </div>
 
-            {/* Tags */}
-            <div className="mb-5 flex flex-wrap gap-1.5">
+            {/* Tags — editable */}
+            <div className="mb-5 flex flex-wrap items-center gap-1.5">
+              {frame.tags.length === 0 && !isEditingTags && (
+                <span className="text-[10px] text-text-muted/20">暂无标签</span>
+              )}
               {frame.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="border border-border-subtle bg-transparent px-2.5 py-0.5 text-[10px] text-text-muted"
+                  className="inline-flex items-center gap-1 border border-border-subtle bg-transparent px-2.5 py-1 text-[10px] text-text-muted"
                   style={{ borderRadius: "3px" }}
                 >
                   {tag}
+                  {isEditingTags && (
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-0.5 flex h-5 w-5 items-center justify-center rounded-full text-text-muted/30 transition-colors hover:text-status-error"
+                    >
+                      <X size={10} />
+                    </button>
+                  )}
                 </span>
               ))}
+              {isEditingTags && (
+                <span
+                  className="inline-flex items-center border border-dashed border-border-subtle bg-transparent px-2 py-1"
+                  style={{ borderRadius: "3px" }}
+                >
+                  <input
+                    ref={newTagInputRef}
+                    value={newTagValue}
+                    onChange={(e) => setNewTagValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleAddTag();
+                      if (e.key === "Escape") setNewTagValue("");
+                    }}
+                    placeholder="新标签"
+                    className="w-20 bg-transparent text-[10px] text-text-muted placeholder:text-text-muted/25 focus:outline-none"
+                  />
+                  <button
+                    onClick={handleAddTag}
+                    className="ml-1 flex h-5 w-5 items-center justify-center text-text-muted/30 transition-colors hover:text-accent"
+                  >
+                    <Plus size={11} />
+                  </button>
+                </span>
+              )}
+              {!isEditingTags && (
+                <button
+                  onClick={() => setIsEditingTags(true)}
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-full text-text-muted/20 transition-colors hover:text-text-muted/50"
+                >
+                  <Plus size={13} />
+                </button>
+              )}
+              {isEditingTags && (
+                <button
+                  onClick={() => setIsEditingTags(false)}
+                  className="ml-1 text-[10px] text-text-muted/30 transition-colors hover:text-text-muted/60"
+                >
+                  完成
+                </button>
+              )}
             </div>
 
             {/* Actions */}
             {confirmingDelete ? (
               <div
                 className="flex flex-col gap-2 border px-4 py-3"
-                style={{ borderRadius: "8px", borderColor: "var(--border-warm)", background: "var(--bg-base)", opacity: 0.6 }}
+                style={{ borderRadius: "8px", borderColor: "var(--border-warm)", background: "var(--surface-1)", opacity: 0.6 }}
               >
                 <p className="text-center text-xs text-text-muted/60">
                   移入回收站？7 天后自动清除。
@@ -208,6 +409,15 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete }: Props) 
                   <Copy size={12} />
                   {copied === "已复制摘要" ? "已复制" : "复制摘要"}
                 </button>
+                {!isEditing ? (
+                  <button
+                    onClick={handleStartEdit}
+                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center border border-border-subtle transition-colors hover:border-border-subtle/80 hover:text-text-primary"
+                    style={{ borderRadius: "8px", color: "var(--text-muted)", opacity: 0.4 }}
+                  >
+                    <Edit3 size={13} />
+                  </button>
+                ) : null}
                 <button
                   onClick={() => setConfirmingDelete(true)}
                   className="flex h-9 w-9 flex-shrink-0 items-center justify-center border border-border-subtle transition-colors hover:border-status-error/30"
@@ -217,6 +427,72 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete }: Props) 
                 </button>
               </div>
             )}
+
+            {/* Export single frame */}
+            <div className="mt-3 flex items-center gap-2 border-t border-border-soft pt-3">
+              <Download size={10} className="text-text-muted/30" />
+              <span className="text-[10px] text-text-muted/30">导出此帧</span>
+              <div className="flex gap-1">
+                {EXPORT_BTNS.map(({ label, fn }) => (
+                  <button
+                    key={label}
+                    onClick={() => handleExportSingle(fn)}
+                    className="rounded border border-border-subtle px-2 py-0.5 text-[10px] text-text-muted/40 transition-colors hover:border-accent/20 hover:text-text-secondary"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Unsaved changes warning overlay */}
+            <AnimatePresence>
+              {showUnsavedWarning && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute inset-0 z-10 flex items-center justify-center"
+                  style={{ borderRadius: "8px", background: "color-mix(in srgb, var(--bg-base) 92%, transparent)" }}
+                >
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    className="border px-5 py-4 text-center"
+                    style={{ borderRadius: "8px", borderColor: "var(--border-warm)", background: "var(--bg-soft)" }}
+                  >
+                    <AlertTriangle size={16} className="mx-auto mb-2" style={{ color: "var(--accent-soft)" }} />
+                    <p className="mb-1 text-xs text-text-secondary">有未保存的修改</p>
+                    <p className="mb-4 text-[10px] text-text-muted/50">关闭将丢失已编辑的内容</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowUnsavedWarning(false)}
+                        className="flex-1 rounded border border-border-subtle py-1.5 text-[10px] text-text-muted transition-colors hover:text-text-secondary"
+                      >
+                        继续编辑
+                      </button>
+                      <button
+                        onClick={handleDiscardAndClose}
+                        className="flex-1 rounded py-1.5 text-[10px] transition-colors hover:opacity-80"
+                        style={{ border: "1px solid var(--status-error)", color: "var(--status-error)", background: "var(--status-error)", opacity: 0.12 }}
+                      >
+                        放弃
+                      </button>
+                      <button
+                        onClick={handleSaveAndClose}
+                        disabled={!editContent.trim()}
+                        className="flex-1 rounded py-1.5 text-[10px] transition-colors hover:opacity-80 disabled:opacity-30"
+                        style={{ background: "var(--accent)", color: "var(--bg-base)" }}
+                      >
+                        保存并关闭
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </motion.div>
       )}

@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
-import { motion, useScroll, useTransform, useSpring, useMotionValue } from "framer-motion";
+import { useRef, useEffect, useCallback, useState } from "react";
+import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { MemoryFrame } from "@/data/demoFrames";
+import DevelopingDot from "./DevelopingDot";
 
 type Props = {
   frames: MemoryFrame[];
@@ -11,7 +12,20 @@ type Props = {
 export default function TimelineRail({ frames }: Props) {
   const railRef = useRef<HTMLDivElement>(null);
   const boundsRef = useRef({ top: 0, height: 1 });
-  const isTooFew = frames.length < 5;
+  const isTooFew = frames.length < 3;
+  const prevCountRef = useRef(frames.length);
+  const [arriving, setArriving] = useState(false);
+
+  // Detect new frame added → brief arrival animation
+  useEffect(() => {
+    if (frames.length > prevCountRef.current) {
+      setArriving(true);
+      const t = setTimeout(() => setArriving(false), 1000);
+      prevCountRef.current = frames.length;
+      return () => clearTimeout(t);
+    }
+    prevCountRef.current = frames.length;
+  }, [frames.length]);
 
   const updateBounds = useCallback(() => {
     if (railRef.current) {
@@ -38,11 +52,10 @@ export default function TimelineRail({ frames }: Props) {
     return Math.max(0, Math.min(1, (viewportCenter - railTopInView) / height));
   });
 
-  // Smooth progress via spring — no React state, no per-frame re-render
   const smoothProgress = useSpring(rawProgress, {
-    stiffness: 80,
-    damping: 25,
-    mass: 0.3,
+    stiffness: 60,
+    damping: 28,
+    mass: 0.5,
   });
 
   const margin = 14;
@@ -53,76 +66,81 @@ export default function TimelineRail({ frames }: Props) {
   );
 
   return (
-    <div
-      ref={railRef}
-      className="absolute left-0 top-0 bottom-0 z-10 w-10"
-    >
+    <div ref={railRef} className="absolute left-0 top-0 bottom-0 z-10 w-10">
       {/* Rail line */}
       <div
         className="absolute left-[15px] top-[14px] bottom-[14px] w-px"
-        style={{
-          background: "var(--border-soft)",
-          opacity: 0.4,
-        }}
+        style={{ background: "var(--border-soft)", opacity: 0.35 }}
       />
 
-      {/* Glow trail behind dot */}
+      {/* Glow trail behind the developing dot */}
+      {!isTooFew && (
+        <motion.div
+          className="absolute left-[15px] top-[14px] w-px"
+          style={{
+            height: scrollDotY,
+            background:
+              "linear-gradient(to bottom, var(--accent-glow), var(--border-soft))",
+            opacity: 0.55,
+          }}
+        />
+      )}
+
+      {/* Developing dot — the current time position */}
       <motion.div
-        className="absolute left-[15px] top-[14px] w-px"
-        style={{
-          height: scrollDotY,
-          background: "linear-gradient(to bottom, var(--accent-glow), var(--border-soft))",
-          opacity: 0.75,
-        }}
-      />
+        className="absolute left-[15px] z-20 -translate-x-1/2"
+        style={{ top: scrollDotY }}
+      >
+        <DevelopingDot
+          arriving={arriving}
+          className={isTooFew ? "opacity-30" : ""}
+        />
+      </motion.div>
 
-      {/* Glow dot — breathing only when too few frames */}
-      <motion.div
-        className="absolute left-[15px] z-20 h-[7px] w-[7px] -translate-x-1/2 rounded-full"
-        style={{
-          top: isTooFew ? "50%" : scrollDotY,
-          background: "var(--accent)",
-          opacity: 0.7,
-          boxShadow: "0 0 6px var(--accent-glow)",
-        }}
-        animate={isTooFew ? { opacity: [0.3, 0.85, 0.3] } : undefined}
-        transition={
-          isTooFew
-            ? { duration: 2.8, repeat: Infinity, ease: "easeInOut" }
-            : undefined
-        }
-      />
+      {/* Frame node markers — minimal dots, no labels when space is tight */}
+      {frames.length >= 3 &&
+        (() => {
+          const labelMinGap = 24;
+          const entries: { frame: MemoryFrame; y: number; showLabel: boolean }[] = [];
+          let lastLabelY = -labelMinGap;
 
-      {/* Frame node markers + time labels — only when enough frames */}
-      {frames.length >= 5 &&
-        frames.map((frame, i) => {
-          const fraction = i / (frames.length - 1);
-          const y = margin + fraction * ((boundsRef.current.height || 200) - margin * 2);
-          return (
+          for (let i = 0; i < frames.length; i++) {
+            const fraction = i / (frames.length - 1);
+            const y =
+              margin + fraction * ((boundsRef.current.height || 200) - margin * 2);
+            const showLabel =
+              i === 0 || i === frames.length - 1 || y - lastLabelY >= labelMinGap;
+            if (showLabel) lastLabelY = y;
+            entries.push({ frame: frames[i], y, showLabel });
+          }
+
+          return entries.map(({ frame, y, showLabel }) => (
             <div key={frame.id} className="absolute left-[15px]" style={{ top: y }}>
               <div
-                className="absolute h-[3px] w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full"
-                style={{ background: "var(--border-soft)", opacity: 0.6 }}
+                className="absolute h-[2.5px] w-[2.5px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+                style={{ background: "var(--border-soft)", opacity: 0.45 }}
               />
-              <span
-                className="absolute left-3 top-1/2 -translate-y-1/2 whitespace-nowrap font-mono text-[9px]"
-                style={{ color: "var(--text-primary)", opacity: 0.1 }}
-              >
-                {frame.time}
-              </span>
+              {showLabel && (
+                <span
+                  className="absolute left-3 top-1/2 -translate-y-1/2 whitespace-nowrap font-mono text-[9px]"
+                  style={{ color: "var(--text-primary)", opacity: 0.08 }}
+                >
+                  {frame.time}
+                </span>
+              )}
             </div>
-          );
-        })}
+          ));
+        })()}
 
-      {/* Mirror-gap highlight near dot */}
+      {/* Mirror-gap highlight near dot — very subtle */}
       <motion.div
         className="absolute left-[15px] w-px"
         style={{
-          top: useTransform(scrollDotY, (v) => Math.max(margin, v - 24)),
-          height: 48,
-          opacity: 0.18,
+          top: useTransform(scrollDotY, (v) => Math.max(margin, v - 28)),
+          height: 56,
+          opacity: 0.12,
           background:
-            "linear-gradient(to bottom, transparent, var(--accent-glow) 30%, var(--accent-glow) 70%, transparent)",
+            "linear-gradient(to bottom, transparent, var(--accent-glow) 25%, var(--accent-glow) 75%, transparent)",
         }}
       />
     </div>

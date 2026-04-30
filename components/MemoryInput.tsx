@@ -19,7 +19,6 @@ export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, 
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Don't auto-focus on mobile — let user tap to start
     if (typeof window !== "undefined" && window.innerWidth >= 768) {
       textareaRef.current?.focus();
     }
@@ -37,7 +36,6 @@ export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, 
     onChange(formatText(value));
   };
 
-  // Defer frame number to avoid hydration mismatch (server always renders Frame 001)
   const isFirstFrame = nextFrameNumber === 1;
   const frameLabel = mounted
     ? `Frame ${nextFrameNumber.toString().padStart(3, "0")}`
@@ -57,33 +55,73 @@ export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, 
         )}
       </div>
 
-      {/* Input container with developing animation — CSS transition for smooth GPU blur */}
-      <div
-        className="transition-all duration-500 ease-out"
-        style={{
-          filter: isDeveloping ? "blur(2px)" : "blur(0px)",
-          opacity: isDeveloping ? 0.55 : 1,
-          willChange: isDeveloping ? "filter, opacity" : "auto",
-        }}
-      >
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={() => onFocusChange?.(true)}
-          onBlur={() => onFocusChange?.(false)}
-          placeholder="今天，有什么被你记住了？"
-          rows={5}
-          className="w-full resize-none border border-border-subtle bg-bg-soft/60 px-5 py-5 text-base leading-relaxed text-text-primary placeholder:text-primary/12 transition-colors focus:border-accent/25 focus:bg-bg-soft/80 focus:outline-none"
+      {/* Input container */}
+      <div className="relative">
+        {/* Textarea — fades + blurs during developing */}
+        <div
+          className="transition-all duration-700 ease-out"
           style={{
-            minHeight: "35vh",
-            borderRadius: "8px",
-            borderLeftColor: "var(--border-warm)",
-            borderLeftWidth: "1px",
-            boxShadow: "inset 0 0 40px var(--accent-glow), inset 0 1px 0 var(--surface-1)",
+            filter: isDeveloping ? "blur(2.5px)" : "blur(0px)",
+            opacity: isDeveloping ? 0.45 : 1,
+            willChange: isDeveloping ? "filter, opacity" : "auto",
           }}
-        />
+        >
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => onFocusChange?.(true)}
+            onBlur={() => onFocusChange?.(false)}
+            placeholder="今天，有什么被你记住了？"
+            rows={5}
+            className="w-full resize-none border border-border-subtle bg-bg-soft/60 px-5 py-5 text-base leading-relaxed text-text-primary placeholder:text-primary/12 transition-colors focus:border-accent/25 focus:bg-bg-soft/80 focus:outline-none"
+            style={{
+              minHeight: "35vh",
+              borderRadius: "8px",
+              borderLeftColor: "var(--border-warm)",
+              borderLeftWidth: "1px",
+              boxShadow: "inset 0 0 40px var(--accent-glow), inset 0 1px 0 var(--surface-1)",
+            }}
+          />
+        </div>
+
+        {/* Developing sweep — a faint band of warm light drifting top → bottom */}
+        {isDeveloping && (
+          <div
+            className="pointer-events-none absolute inset-0 z-10 overflow-hidden"
+            style={{ borderRadius: "8px" }}
+          >
+            <motion.div
+              className="absolute left-0 right-0"
+              style={{
+                height: 16,
+                background:
+                  "linear-gradient(to bottom, transparent 0%, var(--accent-glow) 30%, var(--accent-glow) 70%, transparent 100%)",
+                filter: "blur(3px)",
+                opacity: 0.5,
+              }}
+              initial={{ top: "-16px" }}
+              animate={{ top: "100%" }}
+              transition={{ duration: 1.0, ease: [0.4, 0, 0.2, 1] }}
+            />
+          </div>
+        )}
+
+        {/* Overlay glow — barely there, peaks mid-sweep */}
+        {isDeveloping && (
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.08, 0.04, 0] }}
+            transition={{ duration: 1.1, times: [0, 0.35, 0.7, 1], ease: "easeOut" }}
+            style={{
+              borderRadius: "8px",
+              background:
+                "radial-gradient(ellipse at 50% 50%, var(--accent-glow) 0%, transparent 70%)",
+            }}
+          />
+        )}
       </div>
 
       {/* Character count + format button */}
@@ -102,18 +140,17 @@ export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, 
         </div>
       )}
 
-      {/* Developing overlay pulse */}
+      {/* Developing status — a quiet line of text during exposure */}
       {isDeveloping && (
-        <motion.div
-          className="pointer-events-none absolute inset-0 top-7"
+        <motion.p
+          className="mt-4 text-center text-xs tracking-[0.25em]"
+          style={{ color: "var(--text-primary)" }}
           initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.12, 0] }}
-          transition={{ duration: 1.0, ease: "easeInOut" }}
-          style={{
-            borderRadius: "8px",
-            background: "radial-gradient(ellipse at center, var(--accent-glow) 0%, transparent 70%)",
-          }}
-        />
+          animate={{ opacity: [0, 0.2, 0] }}
+          transition={{ duration: 1.2, ease: "easeInOut" }}
+        >
+          这一帧正在显影
+        </motion.p>
       )}
     </div>
   );

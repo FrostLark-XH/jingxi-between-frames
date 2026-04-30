@@ -49,7 +49,7 @@ export default function ThemeSwitcher() {
                 >
                   <span
                     className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                    style={{ background: t.accent }}
+                    style={{ background: "var(--accent)" }}
                   />
                   {t.name}
                 </button>

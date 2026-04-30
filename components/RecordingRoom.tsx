@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { MemoryFrame } from "@/data/demoFrames";
@@ -23,18 +23,30 @@ type Props = {
 export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, onSave, onViewFilm, todayFrameCount, nextFrameIndex, showToast }: Props) {
   const [isDeveloping, setIsDeveloping] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const isMobile = useIsMobile();
-  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleFocusChange = (focused: boolean) => {
-    if (focused) {
-      if (blurTimerRef.current) { clearTimeout(blurTimerRef.current); blurTimerRef.current = null; }
-      setIsFocused(true);
-    } else {
-      // Delay hiding the sticky bar so click events on the button can fire
-      blurTimerRef.current = setTimeout(() => setIsFocused(false), 150);
-    }
-  };
+  // Track iOS keyboard height via Visual Viewport API so the sticky bar
+  // sits above the keyboard instead of behind it.
+  useEffect(() => {
+    if (!isMobile) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const measure = () => {
+      const gap = window.innerHeight - (vv.offsetTop + vv.height);
+      setKeyboardHeight(gap > 60 ? gap : 0);
+    };
+
+    vv.addEventListener("resize", measure);
+    vv.addEventListener("scroll", measure);
+    measure();
+
+    return () => {
+      vv.removeEventListener("resize", measure);
+      vv.removeEventListener("scroll", measure);
+    };
+  }, [isMobile]);
 
   const handleSave = async () => {
     const trimmed = draftText.trim();
@@ -46,7 +58,8 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
 
     setIsDeveloping(true);
 
-    // Developing animation plays for 600ms before saving
+    // Developing animation plays ~700ms; save at 650ms so the settle phase
+    // overlaps naturally with the view transition.
     setTimeout(async () => {
       const now = new Date();
       const iso = now.toISOString();
@@ -75,7 +88,7 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
 
       onSave(frame);
       setIsDeveloping(false);
-    }, 600);
+    }, 650);
   };
 
   const handleContainerClick = (e: React.MouseEvent) => {
@@ -87,7 +100,7 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
     }
   };
 
-  const showStickyBar = isMobile && isFocused && (draftText.trim().length > 0 || isDeveloping);
+  const showStickyBar = isMobile && (draftText.trim().length > 0 || isDeveloping);
 
   return (
     <div className="flex flex-1 flex-col" onClick={handleContainerClick}>
@@ -119,28 +132,32 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
           onSave={handleSave}
           nextFrameNumber={nextFrameIndex}
           isDeveloping={isDeveloping}
-          onFocusChange={handleFocusChange}
+          onFocusChange={setIsFocused}
         />
       </motion.div>
 
-      {/* Subtle film archive entry — only when idle and empty */}
-      {!draftText.trim() && !isFocused && (
-        <motion.button
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          onClick={onViewFilm}
-          className="mb-4 flex items-center justify-center gap-0.5 text-xs tracking-wider text-text-muted/25 transition-colors hover:text-text-muted/50"
-        >
-          查看时间胶片
-          {todayFrameCount > 0 && (
-            <span className="ml-1">
-              · 今日 {todayFrameCount} 帧
-            </span>
-          )}
-          <ChevronRight size={11} />
-        </motion.button>
-      )}
+      {/* Film archive entry — fades when typing or focused */}
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.4 }}
+        onClick={onViewFilm}
+        className="mb-4 flex items-center justify-center gap-0.5 text-xs tracking-wider transition-all duration-300 hover:text-text-muted/60"
+        style={{
+          color: (draftText.trim() || isFocused)
+            ? "color-mix(in srgb, var(--text-primary) 12%, transparent)"
+            : "color-mix(in srgb, var(--text-primary) 25%, transparent)",
+          pointerEvents: isFocused ? "none" : "auto",
+        }}
+      >
+        查看时间胶片
+        {todayFrameCount > 0 && (
+          <span className="ml-1">
+            · 今日 {todayFrameCount} 帧
+          </span>
+        )}
+        <ChevronRight size={11} />
+      </motion.button>
 
       {/* Action bar — desktop only, mobile uses sticky bar */}
       {!isMobile && (
@@ -161,10 +178,12 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
       {showStickyBar && (
         <div
           data-sticky-save
-          className="fixed bottom-0 left-0 right-0 z-50 border-t border-border-soft px-4 pt-3"
+          className="fixed left-0 right-0 z-50 border-t border-border-soft px-4 pt-3"
           style={{
-            paddingBottom: "env(safe-area-inset-bottom, 16px)",
+            bottom: keyboardHeight,
+            paddingBottom: keyboardHeight > 0 ? 12 : "env(safe-area-inset-bottom, 16px)",
             background: "var(--bg-base)",
+            transition: "bottom 0.25s ease-out",
           }}
         >
           <ActionBar text={draftText} onSave={handleSave} isDeveloping={isDeveloping} />

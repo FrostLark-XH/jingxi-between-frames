@@ -9,9 +9,10 @@ type Props = {
 export default function ActionBar({ text, onSave, isDeveloping = false }: Props) {
   return (
     <div className="flex items-center gap-3">
-      {/* Save button — "开始显影" */}
+      {/* Save button — pointerDown fires before iOS keyboard dismiss and
+          sticky-bar reposition. No preventDefault so focus/blur flows naturally. */}
       <button
-        onClick={onSave}
+        onPointerDown={onSave}
         disabled={!text.trim() || isDeveloping}
         className="flex h-12 flex-1 items-center justify-center text-sm font-medium tracking-wider text-text-primary transition-all active:scale-[0.98] disabled:opacity-25"
         style={{

@@ -81,7 +81,7 @@ function generateSummary(content: string): string {
   if (clean.length <= 18) return `你记录：${clean}。`;
 
   const short = clean.length > 22 ? clean.substring(0, 22).replace(/[，,、\s]+$/, "") + "…" : clean;
-  return `你写下了关于「${short}」的片段。`;
+  return `你写下了关于「${short}」的一帧。`;
 }
 
 // ── Tag generation ────────────────────────────────────────────────────────
@@ -132,7 +132,7 @@ const THEME_PATTERNS: { pattern: RegExp; tag: string }[] = [
 
 function generateTags(content: string): string[] {
   const trimmed = content.trim();
-  if (!trimmed) return ["日常", "片段"];
+  if (!trimmed) return ["日常", "帧"];
 
   const tokens = tokenize(trimmed);
   const tokenCounts = countTokens(tokens);
@@ -167,7 +167,7 @@ function generateTags(content: string): string[] {
 
   if (tags.size === 0) {
     tags.add("日常");
-    tags.add("片段");
+    tags.add("帧");
   }
 
   // Cap at 4 tags, prefer topic/emotion over frequency scraps

@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Archive, X, FileJson, FileText, File, Check, Download } from "lucide-react";
 import { MemoryFrame } from "@/data/demoFrames";
-import { toJSON, toMarkdown, toTXT } from "@/lib/exportFrames";
+import { toJSON, toMarkdown, toTXT, type ExportOptions } from "@/lib/exportFrames";
 
 type Props = {
   frames: MemoryFrame[];
@@ -27,9 +27,20 @@ const EXPORT_BTNS = [
   { label: "TXT", icon: <File size={10} />, fn: toTXT },
 ];
 
+const OPTION_LABELS: { key: keyof ExportOptions; label: string }[] = [
+  { key: "content", label: "文本" },
+  { key: "tags", label: "标签" },
+  { key: "summary", label: "摘要" },
+];
+
 export default function ArchivePanel({ frames, onOpenChange }: Props) {
   const [open, setOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [exportOpts, setExportOpts] = useState<ExportOptions>({ content: true, tags: true, summary: true });
+
+  const toggleOption = (key: keyof ExportOptions) => {
+    setExportOpts((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const grouped = useMemo(() => {
     const map = groupByDate(frames);
@@ -93,7 +104,8 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
               onClick={() => { setOpen(false); setSelectedIds(new Set()); onOpenChange?.(false); }}
-              className="fixed inset-0 z-[55] bg-black/30"
+              className="fixed inset-0 z-[55]"
+              style={{ background: "color-mix(in srgb, var(--bg-base) 70%, transparent)" }}
             />
 
             <motion.aside
@@ -154,11 +166,33 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                           共 {frames.length} 帧 · {dateRange}
                         </p>
                       </div>
+                      {/* Export content options */}
+                      <div className="mb-2 flex items-center gap-3 px-4">
+                        {OPTION_LABELS.map(({ key, label }) => (
+                          <button
+                            key={key}
+                            onClick={() => toggleOption(key)}
+                            className="flex items-center gap-1.5 text-[10px] text-text-muted/40 transition-colors hover:text-text-muted/70"
+                          >
+                            <span
+                              className="flex h-4 w-4 items-center justify-center border transition-colors"
+                              style={{
+                                borderRadius: "3px",
+                                borderColor: exportOpts[key] ? "var(--accent)" : "var(--border-soft)",
+                                background: exportOpts[key] ? "var(--accent)" : "transparent",
+                              }}
+                            >
+                              {exportOpts[key] && <Check size={8} style={{ color: "var(--bg-base)" }} />}
+                            </span>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                       <div className="flex gap-1.5 px-4">
                         {EXPORT_BTNS.map(({ label, icon, fn }) => (
                           <button
                             key={label}
-                            onClick={() => fn(frames)}
+                            onClick={() => fn(frames, exportOpts)}
                             className="flex items-center gap-1 rounded border border-border-soft bg-bg-base px-2.5 py-1 text-[10px] text-text-muted transition-colors hover:border-accent/20 hover:text-text-secondary"
                           >
                             {icon}
@@ -256,7 +290,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                     {EXPORT_BTNS.map(({ label, icon, fn }) => (
                       <button
                         key={label}
-                        onClick={() => fn(selectedFrames)}
+                        onClick={() => fn(selectedFrames, exportOpts)}
                         className="flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-2.5 py-1 text-[10px] transition-colors hover:bg-accent/20"
                         style={{ color: "var(--accent)" }}
                       >

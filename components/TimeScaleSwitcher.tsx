@@ -3,11 +3,10 @@
 import { motion } from "framer-motion";
 import { TimeScale } from "@/data/demoFrames";
 
-const allScales: { key: TimeScale; label: string; minFrames: number }[] = [
-  { key: "year", label: "年", minFrames: 30 },
-  { key: "month", label: "月", minFrames: 10 },
-  { key: "day", label: "日", minFrames: 0 },
-  { key: "fragment", label: "片段", minFrames: 0 },
+const allScales: { key: TimeScale; label: string }[] = [
+  { key: "year", label: "年" },
+  { key: "month", label: "月" },
+  { key: "day", label: "日" },
 ];
 
 type Props = {
@@ -23,7 +22,7 @@ export default function TimeScaleSwitcher({
   totalFrameCount,
   staggerDelay = 0,
 }: Props) {
-  const scales = allScales.filter((s) => totalFrameCount >= s.minFrames);
+  const scales = allScales;
 
   return (
     <motion.nav

@@ -19,7 +19,7 @@ export default function EmptyState({ onNewRecord }: Props) {
         transition={{ duration: 0.8, delay: 0.1 }}
         className="mb-2 text-sm tracking-wider text-text-secondary"
       >
-        还没有留下任何片段。
+        还没有留下任何帧。
       </motion.p>
       <motion.p
         initial={{ opacity: 0, y: 6 }}

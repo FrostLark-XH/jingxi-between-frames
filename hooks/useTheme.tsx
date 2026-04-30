@@ -42,6 +42,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
     applyThemeToDocument(themes[themeId]);
+
+    // Update <meta name="theme-color"> for browser chrome
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      meta.setAttribute("content", themes[themeId].bgBase);
+    } else {
+      const newMeta = document.createElement("meta");
+      newMeta.name = "theme-color";
+      newMeta.content = themes[themeId].bgBase;
+      document.head.appendChild(newMeta);
+    }
   }, [themeId, mounted]);
 
   const setThemeId = useCallback((id: ThemeId) => {

@@ -24,14 +24,15 @@ v0.3/
 │   ├── FilmPage.tsx      # 时间胶片页
 │   ├── MemoryInput.tsx   # textarea 组件
 │   ├── ActionBar.tsx     # "开始显影" 按钮
-│   ├── MemoryTimeline.tsx# 时间线容器（日/月/年/片段）
+│   ├── MemoryTimeline.tsx# 时间线容器（日/月/年）
 │   ├── MemoryCard.tsx    # 帧卡片（React.memo 优化）
-│   ├── TimelineRail.tsx  # 滚动导轨（useSpring 驱动光点）
+│   ├── DevelopingDot.tsx  # 时间导轨节点（暗琥珀微光点，仅时间胶片页使用）
+│   ├── TimelineRail.tsx  # 滚动导轨（useSpring 驱动 DevelopingDot）
 │   ├── ArchivePanel.tsx  # 档案箱（逐帧勾选 + 导出）
 │   ├── RecycleBin.tsx    # 回收站
 │   ├── DaySummaryCard.tsx# 卷首卡
 │   ├── FrameDetailOverlay.tsx # 帧详情浮层
-│   ├── TimeScaleSwitcher.tsx  # 日/月/年/片段切换
+│   ├── TimeScaleSwitcher.tsx  # 日/月/年切换
 │   ├── ThemeSwitcher.tsx # 主题切换（3 套）
 │   ├── ShaderBackground.tsx   # WebGL 背景
 │   ├── StatusToast.tsx   # Toast 提示
@@ -72,7 +73,7 @@ v0.3/
 - **移动端检测**：`useIsMobile()` hook，`< 768px`
 - **移动端保存条**：`fixed bottom-0` + `env(safe-area-inset-bottom)`，复用 ActionBar 组件
 - **草稿保留**：页面切换/刷新不丢文字
-- **时间尺度解锁**：< 10 帧仅日/片段，< 30 加月，≥ 30 加年
+- **时间尺度解锁**：< 10 帧仅日，< 30 加月，≥ 30 加年
 
 ## 边界
 

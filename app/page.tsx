@@ -28,6 +28,7 @@ export default function HomePage() {
     aggregatedData,
     setTimeScale,
     addFrame,
+    updateFrame,
     deleteFrame,
     restoreFrame,
     permanentlyDeleteFrame,
@@ -99,6 +100,7 @@ export default function HomePage() {
             onFrameClick={selectFrame}
             onFrameClose={() => selectFrame(null)}
             onDelete={deleteFrame}
+            onUpdate={updateFrame}
             onRestore={restoreFrame}
             onPermanentlyDelete={permanentlyDeleteFrame}
             onBack={() => setView("recording-room")}

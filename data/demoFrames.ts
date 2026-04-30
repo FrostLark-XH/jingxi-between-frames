@@ -16,7 +16,7 @@ export type MemoryFrame = {
   deletedAt?: string;
 };
 
-export type TimeScale = "year" | "month" | "day" | "fragment";
+export type TimeScale = "year" | "month" | "day";
 
 export function formatFrameNumber(index: number): string {
   return index.toString().padStart(2, "0");
