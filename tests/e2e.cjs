@@ -29,7 +29,7 @@ async function reactType(page, text) {
   page.on("pageerror", err => errors.push(err.message));
 
   console.log("=== 1. 加载首页 ===");
-  await page.goto("http://localhost:3013", { waitUntil: "networkidle" });
+  await page.goto("http://localhost:3000", { waitUntil: "networkidle" });
   await page.waitForTimeout(1000);
 
   if (errors.length > 0) {

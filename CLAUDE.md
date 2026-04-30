@@ -86,7 +86,7 @@ v0.3/
 ## 开发命令
 
 ```bash
-npm run dev      # localhost:3013
+npm run dev      # localhost:3000
 npm run build    # 生产构建
 npx next build   # 等同于 npm run build
 node tests/e2e.cjs  # E2E 测试（需要先 npm run dev）

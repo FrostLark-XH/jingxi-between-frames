@@ -195,7 +195,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
             {/* Close — subtle circle */}
             <button
               onClick={handleRequestClose}
-              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-text-muted/30 transition-colors hover:text-text-muted/60"
+              className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full text-text-muted/30 transition-colors hover:text-text-muted/60"
             >
               <X size={15} />
             </button>
@@ -241,7 +241,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
                     <button
                       onClick={handleSaveEdit}
                       disabled={!editContent.trim()}
-                      className="flex items-center gap-1 rounded px-3 py-1.5 text-xs transition-colors hover:opacity-80 disabled:opacity-30"
+                      className="flex items-center gap-1 rounded px-3 py-2 text-xs transition-colors hover:opacity-80 disabled:opacity-30"
                       style={{ background: "var(--accent)", color: "var(--bg-base)", borderRadius: "4px" }}
                     >
                       <Check size={10} />
@@ -249,7 +249,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
                     </button>
                     <button
                       onClick={handleCancelEdit}
-                      className="rounded border border-border-subtle px-3 py-1.5 text-xs text-text-muted transition-colors hover:text-text-secondary"
+                      className="rounded border border-border-subtle px-3 py-2 text-xs text-text-muted transition-colors hover:text-text-secondary"
                       style={{ borderRadius: "4px" }}
                     >
                       取消
@@ -310,7 +310,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
                   {isEditingTags && (
                     <button
                       onClick={() => handleRemoveTag(tag)}
-                      className="ml-0.5 flex h-5 w-5 items-center justify-center rounded-full text-text-muted/30 transition-colors hover:text-status-error"
+                      className="ml-0.5 flex h-7 w-7 items-center justify-center rounded-full text-text-muted/30 transition-colors hover:text-status-error"
                     >
                       <X size={10} />
                     </button>
@@ -335,7 +335,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
                   />
                   <button
                     onClick={handleAddTag}
-                    className="ml-1 flex h-5 w-5 items-center justify-center text-text-muted/30 transition-colors hover:text-accent"
+                    className="ml-1 flex h-7 w-7 items-center justify-center text-text-muted/30 transition-colors hover:text-accent"
                   >
                     <Plus size={11} />
                   </button>
@@ -344,7 +344,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
               {!isEditingTags && (
                 <button
                   onClick={() => setIsEditingTags(true)}
-                  className="inline-flex h-6 w-6 items-center justify-center rounded-full text-text-muted/20 transition-colors hover:text-text-muted/50"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full text-text-muted/20 transition-colors hover:text-text-muted/50"
                 >
                   <Plus size={13} />
                 </button>
@@ -412,18 +412,18 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
                 {!isEditing ? (
                   <button
                     onClick={handleStartEdit}
-                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center border border-border-subtle transition-colors hover:border-border-subtle/80 hover:text-text-primary"
+                    className="flex h-11 w-11 flex-shrink-0 items-center justify-center border border-border-subtle transition-colors hover:border-border-subtle/80 hover:text-text-primary"
                     style={{ borderRadius: "8px", color: "var(--text-muted)", opacity: 0.4 }}
                   >
-                    <Edit3 size={13} />
+                    <Edit3 size={14} />
                   </button>
                 ) : null}
                 <button
                   onClick={() => setConfirmingDelete(true)}
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center border border-border-subtle transition-colors hover:border-status-error/30"
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center border border-border-subtle transition-colors hover:border-status-error/30"
                   style={{ borderRadius: "8px", color: "var(--text-muted)", opacity: 0.4 }}
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={14} />
                 </button>
               </div>
             )}
@@ -469,13 +469,13 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
                     <div className="flex gap-2">
                       <button
                         onClick={() => setShowUnsavedWarning(false)}
-                        className="flex-1 rounded border border-border-subtle py-1.5 text-[10px] text-text-muted transition-colors hover:text-text-secondary"
+                        className="flex-1 rounded border border-border-subtle py-2 text-[10px] text-text-muted transition-colors hover:text-text-secondary"
                       >
                         继续编辑
                       </button>
                       <button
                         onClick={handleDiscardAndClose}
-                        className="flex-1 rounded py-1.5 text-[10px] transition-colors hover:opacity-80"
+                        className="flex-1 rounded py-2 text-[10px] transition-colors hover:opacity-80"
                         style={{ border: "1px solid var(--status-error)", color: "var(--status-error)", background: "var(--status-error)", opacity: 0.12 }}
                       >
                         放弃
@@ -483,7 +483,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
                       <button
                         onClick={handleSaveAndClose}
                         disabled={!editContent.trim()}
-                        className="flex-1 rounded py-1.5 text-[10px] transition-colors hover:opacity-80 disabled:opacity-30"
+                        className="flex-1 rounded py-2 text-[10px] transition-colors hover:opacity-80 disabled:opacity-30"
                         style={{ background: "var(--accent)", color: "var(--bg-base)" }}
                       >
                         保存并关闭
