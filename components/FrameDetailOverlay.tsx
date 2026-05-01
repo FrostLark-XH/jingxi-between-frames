@@ -320,8 +320,8 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
             <div
               className="mb-5 border border-border-subtle px-4 py-3 rounded-card bg-surface-1 opacity-60"
             >
-              <p className="text-xs leading-relaxed text-text-muted/50">
-                {frame.summary}
+              <p className={`text-xs leading-relaxed ${frame.summary ? "text-text-muted/50" : "text-text-muted/20 italic"}`}>
+                {frame.summary || "请静候时光沉淀…"}
               </p>
 
               {/* AI stale indicator + re-develop button */}
