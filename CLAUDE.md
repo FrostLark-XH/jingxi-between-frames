@@ -1,6 +1,6 @@
-# 镜隙之间 v0.3/v0.4
+# 镜隙之间 v0.6
 
-> Agent 操作约定。保持简洁，避免过时。
+> Agent 操作约定。保持简洁，避免过时。V0.6 Freeze 详见 `docs/V0.6_FREEZE.md`。
 
 ## 技术栈
 
@@ -48,9 +48,11 @@ v0.3/
 │   ├── exportFrames.ts   # JSON/MD/TXT 导出（UTF-8 BOM）
 │   └── textFormat.ts     # 中文段落缩进
 ├── services/ai/
-│   ├── index.ts          # getAiProvider() 工厂
-│   ├── types.ts          # AI 接口定义
-│   └── mockProvider.ts   # 规则模拟（摘要 + 标签）
+│   ├── index.ts          # getAiProvider() 工厂 + real → mock fallback 编排
+│   ├── types.ts          # AI 接口定义 + FrameAiOutput / DaySummaryOutput
+│   ├── mockProvider.ts   # 规则模拟（摘要 + 标签）— fallback
+│   ├── realProvider.ts   # 真实 LLM 调用（DMXAPI）— 服务端 only
+│   └── prompts.ts        # "显影师"角色 prompt 构建
 ├── data/
 │   └── demoFrames.ts     # MemoryFrame 类型 + 聚合函数
 └── tests/
@@ -78,10 +80,12 @@ v0.3/
 ## 边界
 
 - 仅文字输入（语音已移除）
+- 真实 LLM 显影（DMXAPI），mock fallback
+- API Key 仅服务端，前端不直接调 LLM
 - 无后端、无数据库、无账号
-- 无真实 AI（规则模拟）
 - 中文 only
 - 导出仅 JSON/MD/TXT
+- 无 AI 聊天、无心理分析
 
 ## 开发命令
 
