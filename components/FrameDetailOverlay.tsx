@@ -343,6 +343,9 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
                     <RefreshCw size={10} className={redeveloping ? "animate-spin" : ""} />
                     {redeveloping ? "显影中…" : frame.ai ? "重新显影" : "显影"}
                   </button>
+                  {frame.ai && (
+                    <span className="text-micro text-text-muted/25">将根据当前原文重新生成摘要与标签</span>
+                  )}
                 </div>
               )}
             </div>
