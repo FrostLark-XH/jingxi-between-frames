@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MemoryFrame, TimeScale } from "@/data/demoFrames";
 import MemoryCard from "./MemoryCard";
@@ -41,6 +41,55 @@ export default memo(function MemoryTimeline({
   isLoading = false,
 }: Props) {
   const isMobile = useIsMobile();
+  const [aiDaySummaries, setAiDaySummaries] = useState<
+    Record<string, { mainline: string; keywords: string[]; reviewHint: string }>
+  >({});
+
+  // Fetch AI day summaries for day view; falls back to rule-based silently
+  useEffect(() => {
+    if (timeScale !== "day" || data.type !== "day") return;
+    let cancelled = false;
+
+    async function fetchSummaries() {
+      for (const day of data.type === "day" ? data.data : []) {
+        if (cancelled) break;
+        if (aiDaySummaries[day.date]) continue; // already fetched
+        try {
+          const res = await fetch("/api/ai/summarize-day", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              date: day.date,
+              frames: day.frames.map((f) => ({
+                time: f.time,
+                content: f.content,
+                summary: f.summary,
+                tags: f.tags,
+              })),
+            }),
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (!cancelled) {
+              setAiDaySummaries((prev) => ({
+                ...prev,
+                [day.date]: {
+                  mainline: json.mainline,
+                  keywords: json.keywords,
+                  reviewHint: json.reviewHint,
+                },
+              }));
+            }
+          }
+        } catch {
+          // Silently fall back to rule-based — don't disturb the page
+        }
+      }
+    }
+
+    fetchSummaries();
+    return () => { cancelled = true; };
+  }, [timeScale, data]);
   return (
     <div className="flex-1">
       <AnimatePresence mode="wait">
@@ -170,6 +219,7 @@ export default memo(function MemoryTimeline({
                         frameCount={day.frameCount}
                         topTags={day.topTags}
                         frames={day.frames}
+                        aiDaySummary={aiDaySummaries[day.date]}
                       />
 
                       <div className="relative pl-12">

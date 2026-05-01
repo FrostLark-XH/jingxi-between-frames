@@ -1,8 +1,8 @@
 // ── Mock AI provider — rule-based summary & tag generation ──────────────
-// Implements AiProvider interface. Replace with real AI later by swapping
-// the provider in services/ai/index.ts — no component changes needed.
+// Implements AiProvider interface. Used as fallback when real AI is
+// unavailable or LLM_API_KEY is not configured.
 
-import { AiProvider, AiProviderType, FrameInput, FrameAiOutput } from "./types";
+import { AiProvider, AiProviderType, FrameInput, FrameAiOutput, DaySummaryInput, DaySummaryOutput, DaySummaryProvider } from "./types";
 
 // ── Tokenization ──────────────────────────────────────────────────────────
 
@@ -174,16 +174,106 @@ function generateTags(content: string): string[] {
   return [...tags].slice(0, 4);
 }
 
+// ── Tone detection ─────────────────────────────────────────────────────────
+
+function detectTone(content: string): string {
+  const tonePatterns: [RegExp, string][] = [
+    [/开心|快乐|高兴|哈哈|笑|太好了|棒|赞|nice/i, "愉悦"],
+    [/难过|伤心|哭|泪|难受|心疼|遗憾|可惜/, "低落"],
+    [/兴奋|激动|期待|迫不及待|太.*了/, "兴奋"],
+    [/累|疲惫|困|乏|倦|没精神|不想动/, "疲惫"],
+    [/焦虑|紧张|担心|害怕|不安|慌/, "焦虑"],
+    [/暖|温馨|感动|真好|幸福/, "温暖"],
+    [/期待|希望|盼|等.*来|快了/, "期待"],
+  ];
+
+  for (const [pattern, tone] of tonePatterns) {
+    if (pattern.test(content)) return tone;
+  }
+  return "平静";
+}
+
+// ── Day mainline (mock) ───────────────────────────────────────────────────
+
+function generateDayMainline(input: DaySummaryInput): DaySummaryOutput {
+  const { date, frames } = input;
+  if (frames.length === 0) {
+    return {
+      mainline: "今天还没有留下帧。",
+      keywords: [],
+      reviewHint: "可以回去记录一下今天。",
+      provider: "mock",
+    };
+  }
+  if (frames.length === 1) {
+    return {
+      mainline: "今天只留下了一帧，它记录了一个很具体的时刻。",
+      keywords: frames[0].tags.slice(0, 3),
+      reviewHint: "可以回看这一帧原始记录。",
+      provider: "mock",
+    };
+  }
+
+  // Count tags across all frames
+  const tagCounts = new Map<string, number>();
+  for (const f of frames) {
+    for (const t of f.tags) {
+      tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
+    }
+  }
+
+  const sortedTags = [...tagCounts.entries()]
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3);
+
+  const keywords = sortedTags.map(([t]) => t);
+  const topTag = sortedTags[0];
+
+  if (topTag && topTag[1] >= frames.length * 0.6) {
+    return {
+      mainline: `今天的关键词是「${topTag[0]}」。`,
+      keywords,
+      reviewHint: `可以围绕「${topTag[0]}」回看今天的帧。`,
+      provider: "mock",
+    };
+  }
+
+  if (sortedTags.length >= 2) {
+    return {
+      mainline: `今天似乎围绕着「${sortedTags.map(([t]) => t).join("」与「")}」展开。`,
+      keywords,
+      reviewHint: "不妨回看今天的帧，也许会发现新的线索。",
+      provider: "mock",
+    };
+  }
+
+  return {
+    mainline: `你在${date}留下了 ${frames.length} 帧。`,
+    keywords,
+    reviewHint: "可以回看今天的帧。",
+    provider: "mock",
+  };
+}
+
 // ── Provider implementation ───────────────────────────────────────────────
 
-export const mockAiProvider: AiProvider = {
+export const mockAiProvider: AiProvider & DaySummaryProvider = {
   type: "mock" as AiProviderType,
 
   async processFrame(input: FrameInput): Promise<FrameAiOutput> {
-    // Simulate slight async delay (real AI would have network latency)
+    const summary = generateSummary(input.content);
+    const tags = generateTags(input.content);
+    const keywords = tags.slice(0, 3);
     return {
-      summary: generateSummary(input.content),
-      tags: generateTags(input.content),
+      summary,
+      tags,
+      keywords,
+      tone: detectTone(input.content),
+      provider: "mock",
     };
+  },
+
+  async summarizeDay(input: DaySummaryInput): Promise<DaySummaryOutput> {
+    return generateDayMainline(input);
   },
 };

@@ -9,6 +9,11 @@ type Props = {
   frameCount: number;
   topTags: string[];
   frames: MemoryFrame[];
+  aiDaySummary?: {
+    mainline: string;
+    keywords: string[];
+    reviewHint: string;
+  };
 };
 
 const STOP_WORDS = new Set([
@@ -72,8 +77,10 @@ function generateMainThread(frames: MemoryFrame[], topTags: string[]): string | 
   return null;
 }
 
-export default function DaySummaryCard({ date, frameCount, topTags, frames }: Props) {
-  const mainThread = useMemo(() => generateMainThread(frames, topTags), [frames, topTags]);
+export default function DaySummaryCard({ date, frameCount, topTags, frames, aiDaySummary }: Props) {
+  const ruleBasedMainThread = useMemo(() => generateMainThread(frames, topTags), [frames, topTags]);
+  const mainThread = aiDaySummary?.mainline ?? ruleBasedMainThread;
+  const displayKeywords = aiDaySummary?.keywords ?? topTags;
 
   return (
     <motion.div
@@ -112,9 +119,9 @@ export default function DaySummaryCard({ date, frameCount, topTags, frames }: Pr
       />
 
       {/* Recurring words */}
-      {topTags.length > 0 && (
+      {displayKeywords.length > 0 && (
         <p className="text-xs leading-relaxed tracking-wider text-text-muted">
-          今天反复出现的词：{topTags.join(" / ")}
+          今天反复出现的词：{displayKeywords.join(" / ")}
         </p>
       )}
     </motion.div>

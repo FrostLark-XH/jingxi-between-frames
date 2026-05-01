@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { MemoryFrame } from "@/data/demoFrames";
 import { getAiProvider } from "@/services/ai";
+import { contentHash } from "@/services/ai/types";
 import useIsMobile from "@/hooks/useIsMobile";
 import MemoryInput from "./MemoryInput";
 import ActionBar from "./ActionBar";
@@ -67,8 +68,43 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
       const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       const wordCount = trimmed.length;
 
-      const provider = getAiProvider();
-      const { summary, tags } = await provider.processFrame({ content: trimmed });
+      // Try real AI first, fallback to mock on any failure
+      let summary = "";
+      let tags: string[] = [];
+      const aiMetadata: MemoryFrame["ai"] = {
+        provider: "mock",
+        generatedAt: iso,
+        version: "v0.6",
+        contentHash: contentHash(trimmed),
+      };
+      let aiFailed = false;
+
+      try {
+        const res = await fetch("/api/ai/develop-frame", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: trimmed, createdAt: iso }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          summary = data.summary || "";
+          tags = data.tags || [];
+          aiMetadata.provider = data.provider || "mock";
+          if (data.model) aiMetadata.model = data.model;
+        } else {
+          aiFailed = true;
+        }
+      } catch {
+        aiFailed = true;
+      }
+
+      // Fallback to mockProvider if API call failed
+      if (aiFailed) {
+        const provider = getAiProvider();
+        const mockResult = await provider.processFrame({ content: trimmed });
+        summary = mockResult.summary || "";
+        tags = mockResult.tags || [];
+      }
 
       const frame: MemoryFrame = {
         id: `frame-${Date.now()}`,
@@ -84,10 +120,15 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
         status: "saved",
         createdAt: iso,
         updatedAt: iso,
+        ai: aiMetadata,
       };
 
       onSave(frame);
       setIsDeveloping(false);
+
+      if (aiFailed) {
+        showToast("显影失败，已保存原文");
+      }
     }, 650);
   };
 

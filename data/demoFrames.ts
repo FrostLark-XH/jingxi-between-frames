@@ -1,3 +1,5 @@
+import type { FrameAiMetadata } from "@/services/ai/types";
+
 export type MemoryFrame = {
   id: string;
   content: string;
@@ -14,6 +16,7 @@ export type MemoryFrame = {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
+  ai?: FrameAiMetadata;
 };
 
 export type TimeScale = "year" | "month" | "day";
