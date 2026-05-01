@@ -17,6 +17,9 @@ html {
 
 /* Default theme fallback (冷灰暗房) — overridden by ThemeProvider via JS */
 :root {
+  /* ── Fonts ── */
+  --font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
+
   /* ── Base values (overridden per theme by JS) ── */
   --bg-base: #13161A;
   --bg-soft: #1A1D22;
