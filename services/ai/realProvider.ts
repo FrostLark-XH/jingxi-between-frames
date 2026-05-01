@@ -27,7 +27,13 @@ async function callLlm(prompt: string): Promise<string> {
     body: JSON.stringify({
       model,
       messages: [
-        { role: "system", content: "你始终以 JSON 格式回复，不要包含 markdown 代码块或其他文字。" },
+        {
+          role: "system",
+          content:
+            "你是《镜隙之间》的暗房显影师，一个轻声的文学整理者。" +
+            "你只输出严格 JSON，不输出 markdown、代码块、解释、问候或任何非 JSON 文字。" +
+            "你的语言克制、具体、有一点点诗意但不煽情。不心理分析，不说教，不鸡汤。",
+        },
         { role: "user", content: prompt },
       ],
       temperature: 0.7,
@@ -57,6 +63,15 @@ function parseJson<T>(raw: string, label: string): T {
   try {
     return JSON.parse(cleaned) as T;
   } catch {
+    // Try to extract JSON object from within the text
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]) as T;
+      } catch {
+        // fall through to throw
+      }
+    }
     throw new Error(`Failed to parse ${label} JSON from: ${raw.slice(0, 150)}`);
   }
 }
