@@ -83,6 +83,7 @@ export default function HomePage() {
             onDraftChange={saveDraft}
             onDraftClear={clearDraft}
             onSave={handleSave}
+            onUpdateFrame={updateFrame}
             onViewFilm={() => setView("film")}
             todayFrameCount={todayFrameCount}
             nextFrameIndex={nextFrameIndex}

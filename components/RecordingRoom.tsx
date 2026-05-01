@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { MemoryFrame } from "@/data/demoFrames";
-import { getAiProvider } from "@/services/ai";
 import { contentHash } from "@/services/ai/types";
+import { getAiProvider } from "@/services/ai";
 import useIsMobile from "@/hooks/useIsMobile";
 import MemoryInput from "./MemoryInput";
 import ActionBar from "./ActionBar";
@@ -15,13 +15,14 @@ type Props = {
   onDraftChange: (text: string) => void;
   onDraftClear: () => void;
   onSave: (frame: MemoryFrame) => void;
+  onUpdateFrame: (id: string, changes: Partial<Pick<MemoryFrame, "summary" | "tags" | "keywords" | "tone" | "ai">>) => void;
   onViewFilm: () => void;
   todayFrameCount: number;
   nextFrameIndex: number;
   showToast: (message: string) => void;
 };
 
-export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, onSave, onViewFilm, todayFrameCount, nextFrameIndex, showToast }: Props) {
+export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, onSave, onUpdateFrame, onViewFilm, todayFrameCount, nextFrameIndex, showToast }: Props) {
   const [isDeveloping, setIsDeveloping] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -59,28 +60,39 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
 
     setIsDeveloping(true);
 
-    // Developing animation plays ~700ms; save at 650ms so the settle phase
-    // overlaps naturally with the view transition.
+    // Save immediately at 650ms (animation settle point), then run AI in background
     setTimeout(async () => {
       const now = new Date();
       const iso = now.toISOString();
       const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")}`;
       const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       const wordCount = trimmed.length;
+      const hash = contentHash(trimmed);
 
-      // Try real AI first, fallback to mock on any failure
-      let summary = "";
-      let tags: string[] = [];
-      let keywords: string[] = [];
-      let tone = "平静";
-      const aiMetadata: MemoryFrame["ai"] = {
-        provider: "mock",
-        generatedAt: iso,
-        version: "v0.6",
-        contentHash: contentHash(trimmed),
+      const frameId = `frame-${Date.now()}`;
+      const frame: MemoryFrame = {
+        id: frameId,
+        content: trimmed,
+        preview: trimmed.length > 100 ? trimmed.substring(0, 100) + "…" : trimmed,
+        date: dateStr,
+        time: timeStr,
+        frameIndex: nextFrameIndex,
+        summary: "",
+        tags: [],
+        keywords: [],
+        tone: "平静",
+        wordCount,
+        type: "text",
+        status: "saved",
+        createdAt: iso,
+        updatedAt: iso,
+        ai: { provider: "mock", generatedAt: iso, version: "v0.6", contentHash: hash },
       };
-      let aiFailed = false;
 
+      onSave(frame);
+      setIsDeveloping(false);
+
+      // Background AI — never blocks the save
       try {
         const res = await fetch("/api/ai/develop-frame", {
           method: "POST",
@@ -89,54 +101,34 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
         });
         if (res.ok) {
           const data = await res.json();
-          summary = data.summary || "";
-          tags = data.tags || [];
-          keywords = data.keywords || [];
-          tone = data.tone || "平静";
-          aiMetadata.provider = data.provider || "mock";
-          if (data.model) aiMetadata.model = data.model;
-        } else {
-          aiFailed = true;
+          onUpdateFrame(frameId, {
+            summary: data.summary || "",
+            tags: data.tags || [],
+            keywords: data.keywords || [],
+            tone: data.tone || "平静",
+            ai: {
+              provider: data.provider || "mock",
+              model: data.model,
+              generatedAt: new Date().toISOString(),
+              version: "v0.6",
+              contentHash: hash,
+            },
+          });
+          return;
         }
-      } catch {
-        aiFailed = true;
-      }
+      } catch { /* fall through to mock */ }
 
-      // Fallback to mockProvider if API call failed
-      if (aiFailed) {
+      // Mock fallback in background
+      try {
         const provider = getAiProvider();
         const mockResult = await provider.processFrame({ content: trimmed });
-        summary = mockResult.summary || "";
-        tags = mockResult.tags || [];
-        keywords = mockResult.keywords || [];
-        tone = mockResult.tone || "平静";
-      }
-
-      const frame: MemoryFrame = {
-        id: `frame-${Date.now()}`,
-        content: trimmed,
-        preview: trimmed.length > 100 ? trimmed.substring(0, 100) + "…" : trimmed,
-        date: dateStr,
-        time: timeStr,
-        frameIndex: nextFrameIndex,
-        summary,
-        tags,
-        keywords,
-        tone,
-        wordCount,
-        type: "text",
-        status: "saved",
-        createdAt: iso,
-        updatedAt: iso,
-        ai: aiMetadata,
-      };
-
-      onSave(frame);
-      setIsDeveloping(false);
-
-      if (aiFailed) {
-        showToast("显影失败，已保存原文");
-      }
+        onUpdateFrame(frameId, {
+          summary: mockResult.summary || "",
+          tags: mockResult.tags || [],
+          keywords: mockResult.keywords || [],
+          tone: mockResult.tone || "平静",
+        });
+      } catch { /* silent — frame is already saved */ }
     }, 650);
   };
 
