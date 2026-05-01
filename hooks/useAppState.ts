@@ -35,6 +35,8 @@ function migrateFrame(raw: Record<string, unknown>): MemoryFrame | null {
     preview,
     summary: typeof raw.summary === "string" ? raw.summary : "",
     tags: Array.isArray(raw.tags) ? raw.tags.filter((t): t is string => typeof t === "string") : [],
+    keywords: Array.isArray(raw.keywords) ? raw.keywords.filter((k): k is string => typeof k === "string") : undefined,
+    tone: typeof raw.tone === "string" ? raw.tone : undefined,
     date: raw.date as string,
     time: typeof raw.time === "string" ? raw.time : "",
     frameIndex: typeof raw.frameIndex === "number" ? raw.frameIndex : 1,
@@ -44,6 +46,7 @@ function migrateFrame(raw: Record<string, unknown>): MemoryFrame | null {
     status,
     createdAt: typeof raw.createdAt === "string" ? raw.createdAt : fallbackTime,
     updatedAt: typeof raw.updatedAt === "string" ? raw.updatedAt : fallbackTime,
+    ai: raw.ai as MemoryFrame["ai"] | undefined,
   };
 }
 
@@ -99,7 +102,7 @@ type Action =
   | { type: "SET_MONTH"; month: string }
   | { type: "SET_DATE"; date: string }
   | { type: "ADD_FRAME"; frame: MemoryFrame }
-  | { type: "UPDATE_FRAME"; id: string; changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary">> }
+  | { type: "UPDATE_FRAME"; id: string; changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary" | "keywords" | "tone" | "ai">> }
   | { type: "DELETE_FRAME"; id: string }
   | { type: "RESTORE_FRAME"; id: string }
   | { type: "PERMANENTLY_DELETE_FRAME"; id: string }
@@ -204,7 +207,7 @@ export default function useAppState() {
   );
 
   const updateFrame = useCallback(
-    (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary">>) =>
+    (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary" | "keywords" | "tone" | "ai">>) =>
       dispatch({ type: "UPDATE_FRAME", id, changes }),
     []
   );

@@ -61,3 +61,9 @@ export function contentHash(content: string): string {
   }
   return hash.toString(36);
 }
+
+// Check whether AI metadata is stale (content changed since last generation)
+export function isAiStale(content: string, ai?: { contentHash?: string }): boolean {
+  if (!ai?.contentHash) return true;
+  return ai.contentHash !== contentHash(content);
+}

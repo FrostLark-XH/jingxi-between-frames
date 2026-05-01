@@ -105,6 +105,7 @@ export default function HomePage() {
             onPermanentlyDelete={permanentlyDeleteFrame}
             onBack={() => setView("recording-room")}
             onArchiveOpenChange={setArchiveOpen}
+            showToast={showToast}
           />
         )}
 

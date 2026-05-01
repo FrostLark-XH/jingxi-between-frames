@@ -4,13 +4,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { toJSON, toMarkdown, toTXT } from "@/lib/exportFrames";
-import { X, Copy, Type, Mic, ChevronDown, ChevronUp, Trash2, Edit3, Check, Plus, Download, AlertTriangle } from "lucide-react";
+import { contentHash, isAiStale } from "@/services/ai/types";
+import { X, Copy, Type, Mic, ChevronDown, ChevronUp, Trash2, Edit3, Check, Plus, Download, AlertTriangle, RefreshCw } from "lucide-react";
 
 type Props = {
   frame: MemoryFrame | null;
   onClose: () => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary">>) => void;
+  onUpdate: (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary" | "keywords" | "tone" | "ai">>) => void;
+  showToast: (message: string) => void;
 };
 
 const STATUS_LABEL: Record<MemoryFrame["status"], string> = {
@@ -25,7 +27,7 @@ const EXPORT_BTNS = [
   { label: "TXT", fn: (frames: MemoryFrame[]) => toTXT(frames, { content: true, tags: true, summary: true }) },
 ];
 
-export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate }: Props) {
+export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate, showToast }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -34,6 +36,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
   const [isEditingTags, setIsEditingTags] = useState(false);
   const [newTagValue, setNewTagValue] = useState("");
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [redeveloping, setRedeveloping] = useState(false);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const newTagInputRef = useRef<HTMLInputElement>(null);
 
@@ -107,6 +110,42 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
     setEditContent("");
   };
 
+  const handleRedevelop = async () => {
+    if (!frame || redeveloping) return;
+    setRedeveloping(true);
+
+    try {
+      const res = await fetch("/api/ai/develop-frame", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: frame.content, createdAt: new Date().toISOString() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const newAi: MemoryFrame["ai"] = {
+          provider: data.provider || "mock",
+          model: data.model,
+          generatedAt: new Date().toISOString(),
+          version: "v0.6",
+          contentHash: contentHash(frame.content),
+        };
+        onUpdate(frame.id, {
+          summary: data.summary || frame.summary,
+          tags: data.tags || frame.tags,
+          keywords: data.keywords || [],
+          tone: data.tone || "平静",
+          ai: newAi,
+        });
+      } else {
+        showToast("重新显影失败，保留原有摘要");
+      }
+    } catch {
+      showToast("重新显影失败，保留原有摘要");
+    } finally {
+      setRedeveloping(false);
+    }
+  };
+
   const handleRemoveTag = (tag: string) => {
     if (!frame) return;
     const newTags = frame.tags.filter((t) => t !== tag);
@@ -165,6 +204,8 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
 
   const contentText = frame.content;
   const isLong = contentText.length > 200;
+  const aiStale = isAiStale(frame.content, frame.ai);
+  const needsRedevelop = aiStale; // stale or never developed
 
   return (
     <AnimatePresence>
@@ -275,14 +316,55 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
               )}
             </div>
 
-            {/* Summary */}
+            {/* Summary + re-develop */}
             <div
               className="mb-5 border border-border-subtle px-4 py-3 rounded-card bg-surface-1 opacity-60"
             >
               <p className="text-xs leading-relaxed text-text-muted/50">
                 {frame.summary}
               </p>
+
+              {/* AI stale indicator + re-develop button */}
+              {needsRedevelop && (
+                <div className="mt-3 flex items-center gap-2 border-t border-border-soft pt-3">
+                  {frame.ai ? (
+                    <span className="flex items-center gap-1 text-micro text-accent-soft/70">
+                      <AlertTriangle size={10} />
+                      AI 摘要可能已过期
+                    </span>
+                  ) : (
+                    <span className="text-micro text-text-muted/35">尚未显影</span>
+                  )}
+                  <button
+                    onClick={handleRedevelop}
+                    disabled={redeveloping}
+                    className="flex items-center gap-1 rounded border border-accent/20 px-2.5 py-1 text-micro text-accent/70 transition-colors hover:bg-accent/10 disabled:opacity-30"
+                  >
+                    <RefreshCw size={10} className={redeveloping ? "animate-spin" : ""} />
+                    {redeveloping ? "显影中…" : frame.ai ? "重新显影" : "显影"}
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* Keywords + tone — AI metadata badges */}
+            {(frame.keywords && frame.keywords.length > 0 || frame.tone) && (
+              <div className="mb-5 flex flex-wrap items-center gap-1.5">
+                {frame.tone && (
+                  <span className="inline-flex items-center border border-accent/15 bg-accent/5 px-2 py-0.5 text-micro text-accent/60 rounded-tag">
+                    {frame.tone}
+                  </span>
+                )}
+                {frame.keywords && frame.keywords.map((kw) => (
+                  <span
+                    key={kw}
+                    className="inline-flex items-center border border-border-subtle bg-transparent px-2 py-0.5 text-micro text-text-muted/35 rounded-tag"
+                  >
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Tags — editable */}
             <div className="mb-5 flex flex-wrap items-center gap-1.5">

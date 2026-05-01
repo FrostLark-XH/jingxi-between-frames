@@ -6,6 +6,8 @@ export type MemoryFrame = {
   preview: string;
   summary: string;
   tags: string[];
+  keywords?: string[];
+  tone?: string;
   date: string;
   time: string;
   frameIndex: number;

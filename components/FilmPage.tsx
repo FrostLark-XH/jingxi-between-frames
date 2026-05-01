@@ -27,11 +27,12 @@ type Props = {
   onFrameClick: (frame: MemoryFrame) => void;
   onFrameClose: () => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary">>) => void;
+  onUpdate: (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary" | "keywords" | "tone" | "ai">>) => void;
   onRestore: (id: string) => void;
   onPermanentlyDelete: (id: string) => void;
   onBack: () => void;
   onArchiveOpenChange?: (open: boolean) => void;
+  showToast: (message: string) => void;
 };
 
 export default memo(function FilmPage({
@@ -50,6 +51,7 @@ export default memo(function FilmPage({
   onPermanentlyDelete,
   onBack,
   onArchiveOpenChange,
+  showToast,
 }: Props) {
   const hasData =
     aggregatedData.type === "year"
@@ -121,7 +123,7 @@ export default memo(function FilmPage({
       )}
 
       {/* Detail overlay */}
-      <FrameDetailOverlay frame={selectedFrame} onClose={onFrameClose} onDelete={onDelete} onUpdate={onUpdate} />
+      <FrameDetailOverlay frame={selectedFrame} onClose={onFrameClose} onDelete={onDelete} onUpdate={onUpdate} showToast={showToast} />
     </div>
   );
 });

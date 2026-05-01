@@ -71,6 +71,8 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
       // Try real AI first, fallback to mock on any failure
       let summary = "";
       let tags: string[] = [];
+      let keywords: string[] = [];
+      let tone = "平静";
       const aiMetadata: MemoryFrame["ai"] = {
         provider: "mock",
         generatedAt: iso,
@@ -89,6 +91,8 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
           const data = await res.json();
           summary = data.summary || "";
           tags = data.tags || [];
+          keywords = data.keywords || [];
+          tone = data.tone || "平静";
           aiMetadata.provider = data.provider || "mock";
           if (data.model) aiMetadata.model = data.model;
         } else {
@@ -104,6 +108,8 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
         const mockResult = await provider.processFrame({ content: trimmed });
         summary = mockResult.summary || "";
         tags = mockResult.tags || [];
+        keywords = mockResult.keywords || [];
+        tone = mockResult.tone || "平静";
       }
 
       const frame: MemoryFrame = {
@@ -115,6 +121,8 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
         frameIndex: nextFrameIndex,
         summary,
         tags,
+        keywords,
+        tone,
         wordCount,
         type: "text",
         status: "saved",
