@@ -64,7 +64,7 @@ function MemoryCardInner({ frame, index, onClick, isMobile }: Props) {
       </div>
 
       {/* User's text — visual focus */}
-      <p className="mb-3 line-clamp-4 font-serif text-base leading-relaxed whitespace-pre-line text-text-primary">
+      <p className="mb-3 line-clamp-4 font-serif text-base leading-relaxed whitespace-pre-wrap text-text-primary">
         {frame.content}
       </p>
 

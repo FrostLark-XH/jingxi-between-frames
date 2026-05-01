@@ -263,7 +263,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                                           </span>
                                         )}
                                       </div>
-                                      <p className="mt-0.5 text-xs leading-relaxed whitespace-pre-line text-text-muted/70 line-clamp-3">
+                                      <p className="mt-0.5 text-xs leading-relaxed whitespace-pre-wrap text-text-muted/70 line-clamp-3">
                                         {f.content}
                                       </p>
                                     </div>

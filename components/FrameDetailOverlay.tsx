@@ -290,7 +290,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
               ) : (
                 <>
                   <p
-                    className={`font-serif text-base leading-relaxed whitespace-pre-line text-text-primary ${
+                    className={`font-serif text-base leading-relaxed whitespace-pre-wrap text-text-primary ${
                       !expanded && isLong ? "line-clamp-4" : ""
                     }`}
                   >
