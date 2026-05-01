@@ -20,7 +20,9 @@ async function callLlm(prompt: string): Promise<string> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${key}`,
+      Accept: "application/json",
+      Authorization: key,
+      "User-Agent": "DMXAPI/1.0.0 (https://ssvip.dmxapi.com)",
     },
     body: JSON.stringify({
       model,
