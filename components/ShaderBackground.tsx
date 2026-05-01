@@ -3,23 +3,26 @@
 import { useEffect, useRef } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { vertexShader, fragmentShader } from "@/lib/shader";
+import type { Vector2, Vector3 } from "three";
 
 export default function ShaderBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const materialRef = useRef<{ uniforms: Record<string, { value: unknown }> } | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
   const { theme } = useTheme();
 
+  // Init effect — runs once, creates the entire Three.js scene
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
-    let cleanup: (() => void) | null = null;
+    let cancelled = false;
 
     import("three").then((THREE) => {
-      if (!canvasRef.current) return;
+      if (!canvasRef.current || cancelled) return;
 
       const isMobile = window.innerWidth < 768;
       const renderer = new THREE.WebGLRenderer({
-        canvas,
+        canvas: canvasRef.current,
         antialias: false,
         powerPreference: "high-performance",
       });
@@ -50,6 +53,7 @@ export default function ShaderBackground() {
         depthTest: false,
         depthWrite: false,
       });
+      materialRef.current = material;
       const mesh = new THREE.Mesh(geometry, material);
       scene.add(mesh);
 
@@ -86,7 +90,7 @@ export default function ShaderBackground() {
 
       const animate = () => {
         const delta = clock.getDelta();
-        const currentMouse = uniforms.uMouse.value;
+        const currentMouse = uniforms.uMouse.value as Vector2;
         currentMouse.x += (mouseTarget.x - currentMouse.x) * 2 * delta;
         currentMouse.y += (mouseTarget.y - currentMouse.y) * 2 * delta;
         uniforms.uTime.value += delta;
@@ -94,22 +98,51 @@ export default function ShaderBackground() {
         animationId = requestAnimationFrame(animate);
       };
 
+      // Pause animation when tab is hidden
+      const handleVisibility = () => {
+        if (document.hidden) {
+          cancelAnimationFrame(animationId);
+        } else {
+          clock.getDelta(); // discard accumulated delta
+          animate();
+        }
+      };
+      document.addEventListener("visibilitychange", handleVisibility);
+
       animate();
 
-      cleanup = () => {
+      cleanupRef.current = () => {
         cancelAnimationFrame(animationId);
+        document.removeEventListener("visibilitychange", handleVisibility);
         window.removeEventListener("mousemove", handleMouse);
         window.removeEventListener("touchmove", handleTouch);
         window.removeEventListener("resize", handleResize);
         renderer.dispose();
         geometry.dispose();
         material.dispose();
+        materialRef.current = null;
       };
     });
 
     return () => {
-      cleanup?.();
+      cancelled = true;
+      cleanupRef.current?.();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Theme update effect — only patches uniforms, no scene destruction
+  useEffect(() => {
+    const material = materialRef.current;
+    if (!material) return;
+
+    const shader = theme.shader;
+    const u = material.uniforms;
+    (u.uBgBase.value as Vector3).set(...shader.bgBase);
+    (u.uGlowColor1.value as Vector3).set(...shader.glowColor1);
+    (u.uGlowColor2.value as Vector3).set(...shader.glowColor2);
+    u.uGlowIntensity.value = shader.glowIntensity;
+    u.uGrainOpacity.value = shader.grainOpacity;
   }, [theme.id]);
 
   return (

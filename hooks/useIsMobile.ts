@@ -6,6 +6,7 @@ export default function useIsMobile(): boolean {
   const [mobile, setMobile] = useState(false);
 
   useEffect(() => {
+    // 768px matches Tailwind's `md:` breakpoint
     const check = () => setMobile(window.innerWidth < 768);
     check();
     window.addEventListener("resize", check);

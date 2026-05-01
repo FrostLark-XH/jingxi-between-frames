@@ -80,8 +80,7 @@ export default function DaySummaryCard({ date, frameCount, topTags, frames }: Pr
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay: 0.1, ease: [0.4, 0, 0.2, 1] }}
-      className="relative mb-8 overflow-hidden border border-border-subtle bg-bg-soft/40 px-6 py-5"
-      style={{ borderRadius: "8px", background: "var(--surface-1)" }}
+      className="relative mb-8 overflow-hidden border border-border-subtle px-6 py-5 paper-grain rounded-card bg-surface-1"
     >
       {/* Left accent — mirror-gap hint */}
       <div
@@ -95,13 +94,13 @@ export default function DaySummaryCard({ date, frameCount, topTags, frames }: Pr
       </div>
 
       {/* Frame count — the focal line */}
-      <p className="mb-1 text-base leading-relaxed tracking-wider text-text-secondary">
+      <p className="mb-1 font-serif text-base leading-relaxed tracking-wider text-text-secondary">
         你留下了 {frameCount} 帧。
       </p>
 
       {/* Main thread — one-line summary */}
       {mainThread && (
-        <p className="mb-4 text-sm leading-relaxed tracking-wider text-text-muted">
+        <p className="mb-4 font-serif text-sm leading-relaxed tracking-wider text-text-muted">
           {mainThread}
         </p>
       )}

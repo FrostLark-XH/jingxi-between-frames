@@ -45,11 +45,11 @@ export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, 
     <div className="relative">
       {/* Status bar */}
       <div className="mb-2 flex items-center justify-between px-1">
-        <span className="font-mono text-[10px] tracking-[0.15em] text-text-muted/40">
+        <span className="font-mono text-micro tracking-[0.15em] text-text-muted/40">
           {isFirstFrame ? "准备留下第一帧" : "下一帧"}
         </span>
         {!isFirstFrame && (
-          <span className="font-mono text-[10px] tracking-[0.1em] text-text-muted/30">
+          <span className="font-mono text-micro tracking-[0.1em] text-text-muted/30">
             {frameLabel}
           </span>
         )}
@@ -57,70 +57,80 @@ export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, 
 
       {/* Input container */}
       <div className="relative">
-        {/* Textarea — fades + blurs during developing */}
-        <div
-          className="transition-all duration-700 ease-out"
+        {/* Textarea — stays fully visible; the developing feel comes from the light sweep + border glow */}
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => onFocusChange?.(true)}
+          onBlur={() => onFocusChange?.(false)}
+          placeholder="今天，有什么被你记住了？"
+          rows={5}
+          className="w-full resize-none border border-border-subtle bg-bg-soft/60 px-5 py-5 text-base leading-relaxed text-text-primary placeholder:text-primary/12 transition-all duration-700 focus:border-accent/25 focus:bg-bg-soft/80 focus:outline-none rounded-card border-l border-l-border-warm"
           style={{
-            filter: isDeveloping ? "blur(2.5px)" : "blur(0px)",
-            opacity: isDeveloping ? 0.45 : 1,
-            willChange: isDeveloping ? "filter, opacity" : "auto",
+            minHeight: "35vh",
+            boxShadow: isDeveloping
+              ? "inset 0 0 60px var(--accent-glow), inset 0 1px 0 var(--surface-1)"
+              : "inset 0 0 40px var(--accent-glow), inset 0 1px 0 var(--surface-1)",
+            borderColor: isDeveloping ? "var(--accent-soft)" : undefined,
           }}
-        >
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => onFocusChange?.(true)}
-            onBlur={() => onFocusChange?.(false)}
-            placeholder="今天，有什么被你记住了？"
-            rows={5}
-            className="w-full resize-none border border-border-subtle bg-bg-soft/60 px-5 py-5 text-base leading-relaxed text-text-primary placeholder:text-primary/12 transition-colors focus:border-accent/25 focus:bg-bg-soft/80 focus:outline-none"
-            style={{
-              minHeight: "35vh",
-              borderRadius: "8px",
-              borderLeftColor: "var(--border-warm)",
-              borderLeftWidth: "1px",
-              boxShadow: "inset 0 0 40px var(--accent-glow), inset 0 1px 0 var(--surface-1)",
-            }}
-          />
-        </div>
+        />
 
-        {/* Developing sweep — a faint band of warm light drifting top → bottom */}
-        {isDeveloping && (
-          <div
-            className="pointer-events-none absolute inset-0 z-10 overflow-hidden"
-            style={{ borderRadius: "8px" }}
-          >
-            <motion.div
-              className="absolute left-0 right-0"
-              style={{
-                height: 16,
-                background:
-                  "linear-gradient(to bottom, transparent 0%, var(--accent-glow) 30%, var(--accent-glow) 70%, transparent 100%)",
-                filter: "blur(3px)",
-                opacity: 0.5,
-              }}
-              initial={{ top: "-16px" }}
-              animate={{ top: "100%" }}
-              transition={{ duration: 1.0, ease: [0.4, 0, 0.2, 1] }}
-            />
-          </div>
-        )}
-
-        {/* Overlay glow — barely there, peaks mid-sweep */}
+        {/* Developing wash — warm organic clouds + grain, like developer solution flowing over photo paper */}
         {isDeveloping && (
           <motion.div
-            className="pointer-events-none absolute inset-0 z-10"
+            className="pointer-events-none absolute inset-0 z-10 rounded-card overflow-hidden"
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.08, 0.04, 0] }}
-            transition={{ duration: 1.1, times: [0, 0.35, 0.7, 1], ease: "easeOut" }}
-            style={{
-              borderRadius: "8px",
-              background:
-                "radial-gradient(ellipse at 50% 50%, var(--accent-glow) 0%, transparent 70%)",
-            }}
-          />
+            animate={{ opacity: [0, 1, 1, 0] }}
+            transition={{ duration: 1.25, times: [0, 0.12, 0.82, 1], ease: "easeInOut" }}
+          >
+            {/* Main cloud — leads the wash, softer centre */}
+            <motion.div
+              className="absolute left-0 right-0 h-9"
+              style={{
+                filter: "blur(10px)",
+                background:
+                  "radial-gradient(ellipse 55% 45% at 50% 50%, var(--accent-soft) 0%, var(--accent-glow) 35%, transparent 70%)",
+                opacity: 0.3,
+                borderRadius: "58% 42% 55% 45%",
+              }}
+              initial={{ top: "-36px" }}
+              animate={{ top: "calc(100% + 36px)" }}
+              transition={{ duration: 1.2, ease: "easeInOut" }}
+            />
+
+            {/* Secondary cloud — smaller, offset, trails behind for organic unevenness */}
+            <motion.div
+              className="absolute h-7"
+              style={{
+                left: "8%",
+                right: "18%",
+                filter: "blur(12px)",
+                background:
+                  "radial-gradient(ellipse 40% 38% at 50% 50%, var(--accent-glow) 0%, transparent 65%)",
+                opacity: 0.22,
+                borderRadius: "45% 55% 50% 50%",
+              }}
+              initial={{ top: "-28px" }}
+              animate={{ top: "calc(100% + 28px)" }}
+              transition={{ duration: 1.25, ease: "easeInOut", delay: 0.08 }}
+            />
+
+            {/* Micro grain — breaks mechanical precision, too faint to feel dirty */}
+            <motion.div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+                backgroundRepeat: "repeat",
+                backgroundSize: "200px 200px",
+              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.018 }}
+              transition={{ duration: 0.5 }}
+            />
+          </motion.div>
         )}
       </div>
 
@@ -129,27 +139,27 @@ export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, 
         <div className="mt-1.5 flex items-center justify-between">
           <button
             onClick={handleFormat}
-            className="flex items-center gap-1 font-mono text-[10px] text-text-muted/30 transition-colors hover:text-text-muted/60"
+            className="flex items-center gap-1 font-mono text-micro text-text-muted/30 transition-colors hover:text-text-muted/60"
           >
             <AlignJustify size={10} />
             缩进
           </button>
-          <span className="font-mono text-[10px] text-text-muted/25">
+          <span className="font-mono text-micro text-text-muted/25">
             {value.length} 字
           </span>
         </div>
       )}
 
-      {/* Developing status — a quiet line of text during exposure */}
+      {/* Developing status — warm safelight glow */}
       {isDeveloping && (
         <motion.p
-          className="mt-4 text-center text-xs tracking-[0.25em]"
-          style={{ color: "var(--text-primary)" }}
+          className="mt-5 text-center font-serif text-xs tracking-[0.2em]"
+          style={{ color: "var(--accent-soft)" }}
           initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.2, 0] }}
-          transition={{ duration: 1.2, ease: "easeInOut" }}
+          animate={{ opacity: [0, 0.5, 0] }}
+          transition={{ duration: 1.1, ease: "easeInOut" }}
         >
-          这一帧正在显影
+          这一帧正在显影...
         </motion.p>
       )}
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useCallback } from "react";
+import { useReducer, useCallback, useMemo } from "react";
 import {
   MemoryFrame,
   TimeScale,
@@ -237,8 +237,8 @@ export default function useAppState() {
     []
   );
 
-  const aggregatedData = (() => {
-    const { frames, timeScale, selectedDate } = state;
+  const aggregatedData = useMemo(() => {
+    const { frames, timeScale } = state;
     const active = frames.filter((f) => !f.deletedAt);
 
     switch (timeScale) {
@@ -249,7 +249,7 @@ export default function useAppState() {
       case "day":
         return { type: "day" as const, data: getAggregatedDayData(active) };
     }
-  })();
+  }, [state.frames, state.timeScale]);
 
   const todayDate = getTodayDateString();
   const todayFrameCount = state.frames.filter((f) => f.date === todayDate && !f.deletedAt).length;

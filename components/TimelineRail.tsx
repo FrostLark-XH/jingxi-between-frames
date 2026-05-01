@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { MemoryFrame } from "@/data/demoFrames";
 import DevelopingDot from "./DevelopingDot";
@@ -12,6 +12,7 @@ type Props = {
 export default function TimelineRail({ frames }: Props) {
   const railRef = useRef<HTMLDivElement>(null);
   const boundsRef = useRef({ top: 0, height: 1 });
+  const [railHeight, setRailHeight] = useState(200);
   const isTooFew = frames.length < 3;
   const prevCountRef = useRef(frames.length);
   const [arriving, setArriving] = useState(false);
@@ -30,7 +31,9 @@ export default function TimelineRail({ frames }: Props) {
   const updateBounds = useCallback(() => {
     if (railRef.current) {
       const r = railRef.current.getBoundingClientRect();
-      boundsRef.current = { top: r.top, height: Math.max(r.height, 1) };
+      const h = Math.max(r.height, 1);
+      boundsRef.current = { top: r.top, height: h };
+      setRailHeight(h);
     }
   }, []);
 
@@ -99,7 +102,7 @@ export default function TimelineRail({ frames }: Props) {
 
       {/* Frame node markers — minimal dots, no labels when space is tight */}
       {frames.length >= 3 &&
-        (() => {
+        useMemo(() => {
           const labelMinGap = 24;
           const entries: { frame: MemoryFrame; y: number; showLabel: boolean }[] = [];
           let lastLabelY = -labelMinGap;
@@ -122,7 +125,7 @@ export default function TimelineRail({ frames }: Props) {
               />
               {showLabel && (
                 <span
-                  className="absolute left-3 top-1/2 -translate-y-1/2 whitespace-nowrap font-mono text-[9px]"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 whitespace-nowrap font-mono text-micro"
                   style={{ color: "var(--text-primary)", opacity: 0.08 }}
                 >
                   {frame.time}
@@ -130,7 +133,7 @@ export default function TimelineRail({ frames }: Props) {
               )}
             </div>
           ));
-        })()}
+        }, [frames, railHeight])}
 
       {/* Mirror-gap highlight near dot — very subtle */}
       <motion.div

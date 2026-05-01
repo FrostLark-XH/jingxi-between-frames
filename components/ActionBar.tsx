@@ -1,5 +1,7 @@
 "use client";
 
+import { motion } from "framer-motion";
+
 type Props = {
   text: string;
   onSave: () => void;
@@ -7,27 +9,36 @@ type Props = {
 };
 
 export default function ActionBar({ text, onSave, isDeveloping = false }: Props) {
+  const isActive = Boolean(text.trim() && !isDeveloping);
+
   return (
     <div className="flex items-center gap-3">
       {/* Save button — pointerDown fires before iOS keyboard dismiss and
           sticky-bar reposition. No preventDefault so focus/blur flows naturally. */}
-      <button
+      <motion.button
         onPointerDown={onSave}
         disabled={!text.trim() || isDeveloping}
-        className="flex h-12 flex-1 items-center justify-center text-sm font-medium tracking-wider text-text-primary transition-all active:scale-[0.98] disabled:opacity-25"
+        className="flex h-12 flex-1 items-center justify-center text-sm font-medium tracking-wider text-text-primary active:scale-[0.98] disabled:opacity-25"
         style={{
           borderRadius: "8px",
-          background: text.trim() && !isDeveloping
+          background: isActive
             ? "linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%)"
             : "var(--surface-2)",
-          boxShadow: text.trim() && !isDeveloping
-            ? "var(--shadow-glow)"
-            : "none",
           opacity: isDeveloping ? 0.5 : undefined,
         }}
+        animate={
+          isActive
+            ? { boxShadow: ["0 0 8px var(--accent-glow)", "0 0 18px var(--accent-glow)", "0 0 8px var(--accent-glow)"] }
+            : { boxShadow: "none" }
+        }
+        transition={
+          isActive
+            ? { duration: 3, repeat: Infinity, ease: "easeInOut" }
+            : undefined
+        }
       >
         {isDeveloping ? "显影中..." : "开始显影"}
-      </button>
+      </motion.button>
     </div>
   );
 }

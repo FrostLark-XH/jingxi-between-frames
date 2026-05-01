@@ -24,66 +24,72 @@ export type ThemeTokens = {
   };
 };
 
-// ── Theme A: 雾灰暗房 (default) ─────────────────────────────────────────
+// ── Theme A: 冷灰暗房 (default) ─────────────────────────────────────────
+// Cold darkroom with amber safelight — the darkest, coolest theme.
+// Background leans blue-gray; accent is a warm amber glow like a safelight bulb.
 
 const mistDarkroom: ThemeTokens = {
   id: "mist-darkroom",
-  name: "雾灰暗房",
-  bgBase: "#16181B",
-  bgSoft: "#1D2024",
-  accent: "#B07A5A",
-  accentSoft: "#8F5A47",
-  accentGlow: "rgba(143,90,71,0.28)",
-  textPrimary: "#F3EFE7",
-  statusError: "#C77B6B",
+  name: "冷灰暗房",
+  bgBase: "#13161A",
+  bgSoft: "#1A1D22",
+  accent: "#C08850",
+  accentSoft: "#9A6840",
+  accentGlow: "rgba(154,104,64,0.26)",
+  textPrimary: "#F2EDE4",
+  statusError: "#C4786A",
   shader: {
-    glowColor1: [0.38, 0.30, 0.22],
-    glowColor2: [0.30, 0.22, 0.16],
-    glowIntensity: 0.028,
-    grainOpacity: 0.025,
-    bgBase: [0.086, 0.094, 0.106],
+    glowColor1: [0.42, 0.33, 0.22],
+    glowColor2: [0.32, 0.24, 0.16],
+    glowIntensity: 0.026,
+    grainOpacity: 0.028,
+    bgBase: [0.075, 0.086, 0.102],
   },
 };
 
-// ── Theme B: 暮色豆沙 ────────────────────────────────────────────────────
+// ── Theme B: 暖玫旧纸 ────────────────────────────────────────────────────
+// Warm rose-tinted darkroom — aged photo paper in chemical bath.
+// Background has a subtle rose/brown warmth; accent leans terracotta.
 
 const duskBean: ThemeTokens = {
   id: "dusk-bean",
-  name: "暮色豆沙",
-  bgBase: "#221D20",
-  bgSoft: "#2B2529",
-  accent: "#C0846A",
-  accentSoft: "#9B6157",
-  accentGlow: "rgba(155,97,87,0.30)",
-  textPrimary: "#F1E9E4",
-  statusError: "#C97972",
+  name: "暖玫旧纸",
+  bgBase: "#1F191B",
+  bgSoft: "#292024",
+  accent: "#C88070",
+  accentSoft: "#A06055",
+  accentGlow: "rgba(160,96,85,0.28)",
+  textPrimary: "#F1E8E3",
+  statusError: "#C4756E",
   shader: {
-    glowColor1: [0.55, 0.28, 0.20],
-    glowColor2: [0.40, 0.20, 0.14],
-    glowIntensity: 0.032,
-    grainOpacity: 0.022,
-    bgBase: [0.133, 0.114, 0.125],
+    glowColor1: [0.58, 0.30, 0.22],
+    glowColor2: [0.42, 0.20, 0.15],
+    glowIntensity: 0.030,
+    grainOpacity: 0.024,
+    bgBase: [0.122, 0.098, 0.106],
   },
 };
 
-// ── Theme C: 晨雾米灰 ────────────────────────────────────────────────────
+// ── Theme C: 晨雾米纸 ────────────────────────────────────────────────────
+// Light rice-paper theme — misted glass, morning warmth.
+// Warm off-white background with muted brown accents; soft and airy.
 
 const morningGrey: ThemeTokens = {
   id: "morning-grey",
-  name: "晨雾米灰",
-  bgBase: "#EAE5DC",
-  bgSoft: "#E1DBD0",
-  accent: "#A56F52",
-  accentSoft: "#C89E85",
-  accentGlow: "rgba(200,158,133,0.34)",
-  textPrimary: "#2E2A27",
-  statusError: "#B86B61",
+  name: "晨雾米纸",
+  bgBase: "#ECE6DC",
+  bgSoft: "#E3DCCF",
+  accent: "#A07858",
+  accentSoft: "#C8A890",
+  accentGlow: "rgba(200,168,144,0.32)",
+  textPrimary: "#2C2824",
+  statusError: "#B56860",
   shader: {
-    glowColor1: [0.72, 0.62, 0.52],
-    glowColor2: [0.65, 0.55, 0.45],
-    glowIntensity: 0.018,
-    grainOpacity: 0.012,
-    bgBase: [0.918, 0.898, 0.863],
+    glowColor1: [0.74, 0.64, 0.54],
+    glowColor2: [0.68, 0.58, 0.48],
+    glowIntensity: 0.016,
+    grainOpacity: 0.014,
+    bgBase: [0.925, 0.902, 0.863],
   },
 };
 

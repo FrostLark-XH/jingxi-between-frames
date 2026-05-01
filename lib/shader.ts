@@ -83,7 +83,7 @@ export const fragmentShader = `
     vec3 warmLight = uGlowColor1 * glow1 + uGlowColor2 * glow2;
 
     // film grain — theme-controlled opacity
-    float grainRes = uIsMobile > 0.5 ? 1.5 : 1.0;
+    float grainRes = uIsMobile > 0.5 ? 0.67 : 1.0;
     float grain = hash(uv * 800.0 * grainRes + uTime * 0.08) * uGrainOpacity;
     grain *= 0.4 + 0.6 * fbm(uv * 10.0);
 

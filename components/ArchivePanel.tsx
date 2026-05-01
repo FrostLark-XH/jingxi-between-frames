@@ -117,10 +117,10 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-border-soft px-5 py-4">
-                <h2 className="text-base font-medium tracking-wider text-text-primary">档案</h2>
+                <h2 className="font-serif text-base font-medium tracking-wider text-text-primary">档案</h2>
                 <button
                   onClick={() => { setOpen(false); setSelectedIds(new Set()); onOpenChange?.(false); }}
-                  className="rounded-full p-2 text-text-muted/50 transition-colors hover:text-text-secondary"
+                  className="flex h-12 w-12 items-center justify-center rounded-full text-text-muted/50 transition-colors hover:text-text-secondary"
                 >
                   <X size={16} />
                 </button>
@@ -159,7 +159,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                 ) : (
                   <>
                     {/* ── All records overview ── */}
-                    <div className="mb-4 border border-border-soft pb-3" style={{ borderRadius: "6px", background: "var(--surface-1)" }}>
+                    <div className="mb-4 border border-border-soft pb-3 rounded-button bg-surface-1">
                       <div className="px-4 pt-3 pb-2">
                         <h3 className="text-sm font-medium tracking-wider text-text-secondary">全部记录</h3>
                         <p className="mt-1 text-xs text-text-muted/60">
@@ -172,7 +172,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                           <button
                             key={key}
                             onClick={() => toggleOption(key)}
-                            className="flex items-center gap-1.5 text-[10px] text-text-muted/40 transition-colors hover:text-text-muted/70"
+                            className="flex items-center gap-1.5 text-micro text-text-muted/40 transition-colors hover:text-text-muted/70"
                           >
                             <span
                               className="flex h-4 w-4 items-center justify-center border transition-colors"
@@ -193,7 +193,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                           <button
                             key={label}
                             onClick={() => fn(frames, exportOpts)}
-                            className="flex items-center gap-1 rounded border border-border-soft bg-bg-base px-2.5 py-1 text-[10px] text-text-muted transition-colors hover:border-accent/20 hover:text-text-secondary"
+                            className="flex items-center gap-1 rounded border border-border-soft bg-bg-base px-2.5 py-1 text-micro text-text-muted transition-colors hover:border-accent/20 hover:text-text-secondary"
                           >
                             {icon}
                             {label}
@@ -226,7 +226,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                                 {dateChecked && <Check size={9} style={{ color: "var(--bg-base)" }} />}
                               </span>
                               <span className="font-mono text-sm tracking-[0.1em] text-text-secondary">{date}</span>
-                              <span className="text-[10px] text-text-muted/40">{dayFrames.length} 帧</span>
+                              <span className="text-micro text-text-muted/40">{dayFrames.length} 帧</span>
                             </button>
 
                             {/* Individual frame cards */}
@@ -256,9 +256,9 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                                     </span>
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-baseline justify-between gap-2">
-                                        <span className="font-mono text-[10px] text-text-muted/50">{f.time}</span>
+                                        <span className="font-mono text-micro text-text-muted/50">{f.time}</span>
                                         {f.tags.length > 0 && (
-                                          <span className="truncate text-[10px] text-text-muted/40">
+                                          <span className="truncate text-micro text-text-muted/40">
                                             {f.tags.slice(0, 3).join(" / ")}
                                           </span>
                                         )}
@@ -291,8 +291,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                       <button
                         key={label}
                         onClick={() => fn(selectedFrames, exportOpts)}
-                        className="flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-2.5 py-1 text-[10px] transition-colors hover:bg-accent/20"
-                        style={{ color: "var(--accent)" }}
+                        className="flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-2.5 py-1 text-micro transition-colors hover:bg-accent/20 text-accent"
                       >
                         {icon}
                         {label}

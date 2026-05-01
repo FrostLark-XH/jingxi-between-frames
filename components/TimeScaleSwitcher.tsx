@@ -3,10 +3,16 @@
 import { motion } from "framer-motion";
 import { TimeScale } from "@/data/demoFrames";
 
-const allScales: { key: TimeScale; label: string }[] = [
-  { key: "year", label: "年" },
-  { key: "month", label: "月" },
-  { key: "day", label: "日" },
+type ScaleInfo = {
+  key: TimeScale;
+  label: string;
+  minFrames: number;
+};
+
+const allScales: ScaleInfo[] = [
+  { key: "year", label: "年", minFrames: 30 },
+  { key: "month", label: "月", minFrames: 10 },
+  { key: "day", label: "日", minFrames: 0 },
 ];
 
 type Props = {
@@ -22,8 +28,6 @@ export default function TimeScaleSwitcher({
   totalFrameCount,
   staggerDelay = 0,
 }: Props) {
-  const scales = allScales;
-
   return (
     <motion.nav
       initial={{ opacity: 0, y: -4 }}
@@ -36,18 +40,23 @@ export default function TimeScaleSwitcher({
       className="flex gap-1 bg-bg-soft p-1"
       style={{ borderRadius: "6px" }}
     >
-      {scales.map((s) => {
+      {allScales.map((s) => {
         const isActive = current === s.key;
+        const isDisabled = totalFrameCount < s.minFrames;
+
         return (
           <button
             key={s.key}
-            onClick={() => onChange(s.key)}
-            className={`relative flex-1 py-1.5 text-sm transition-colors ${
-              isActive
-                ? "text-text-primary"
-                : "text-text-muted hover:text-text-secondary"
+            onClick={() => !isDisabled && onChange(s.key)}
+            disabled={isDisabled}
+            className={`relative flex-1 py-3 text-sm transition-colors touch-manipulation ${
+              isDisabled
+                ? "cursor-not-allowed opacity-30"
+                : isActive
+                  ? "text-text-primary"
+                  : "text-text-muted hover:text-text-secondary"
             }`}
-            style={{ borderRadius: "4px" }}
+            style={{ borderRadius: "4px", minHeight: "48px" }}
           >
             {isActive && (
               <motion.div

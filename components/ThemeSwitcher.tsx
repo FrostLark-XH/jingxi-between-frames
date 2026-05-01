@@ -29,11 +29,7 @@ export default function ThemeSwitcher() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.96 }}
               transition={{ duration: 0.2 }}
-              className="absolute right-0 top-8 z-50 w-36 overflow-hidden border border-border-subtle py-1"
-              style={{
-                borderRadius: "8px",
-                background: "var(--bg-soft)",
-              }}
+              className="absolute right-0 top-8 z-50 w-36 overflow-hidden border border-border-subtle py-1 rounded-card bg-bg-soft"
             >
               {themeList.map((t) => (
                 <button

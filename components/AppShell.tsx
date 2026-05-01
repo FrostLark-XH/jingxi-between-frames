@@ -17,7 +17,7 @@ export default function AppShell({ children, hideThemeSwitcher = false }: Props)
   }, []);
 
   return (
-    <div ref={constraintsRef} className="relative min-h-dvh w-full overflow-x-hidden">
+    <div ref={constraintsRef} className="relative min-h-screen min-h-dvh w-full overflow-x-hidden">
       {/* Theme switcher — subtle, top-right */}
       {!hideThemeSwitcher && (
         <div className="fixed right-4 top-4 z-30" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
@@ -27,7 +27,7 @@ export default function AppShell({ children, hideThemeSwitcher = false }: Props)
 
       {/* Content container — mobile-first max-width */}
       <motion.div
-        className="relative z-10 mx-auto flex min-h-dvh max-w-app flex-col px-5 pb-8"
+        className="relative z-10 mx-auto flex min-h-screen min-h-dvh max-w-app flex-col px-5 pb-8"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 16px) + 16px)" }}
       >
         {children}

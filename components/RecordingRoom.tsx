@@ -111,10 +111,10 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
         transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
         className="mb-12 mt-6 text-center"
       >
-        <h1 className="text-xl font-medium tracking-widest text-text-primary">
+        <h1 className="font-serif text-xl font-medium tracking-widest text-text-primary">
           镜隙之间
         </h1>
-        <p className="mt-2 text-xs tracking-[0.2em] text-text-muted">
+        <p className="mt-2 font-serif text-xs italic tracking-wide text-text-muted">
           让时间慢慢显影
         </p>
       </motion.header>
@@ -178,11 +178,10 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
       {showStickyBar && (
         <div
           data-sticky-save
-          className="fixed left-0 right-0 z-50 border-t border-border-soft px-4 pt-3"
+          className="fixed left-0 right-0 z-50 border-t border-border-soft px-4 pt-3 bg-bg-base"
           style={{
             bottom: keyboardHeight,
             paddingBottom: keyboardHeight > 0 ? 12 : "env(safe-area-inset-bottom, 16px)",
-            background: "var(--bg-base)",
             transition: "bottom 0.25s ease-out",
           }}
         >

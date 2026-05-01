@@ -175,8 +175,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
           onClick={handleRequestClose}
-          className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto px-5 py-20 backdrop-blur-sm"
-          style={{ background: "var(--surface-overlay)" }}
+          className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto px-5 py-20 bg-surface-overlay"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.97, y: 16 }}
@@ -184,18 +183,12 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
             exit={{ opacity: 0, scale: 0.97, y: 16 }}
             transition={{ type: "spring", stiffness: 350, damping: 28 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-app border border-border-subtle p-6"
-            style={{
-              borderRadius: "8px",
-              borderLeftColor: "var(--border-warm)",
-              borderLeftWidth: "1px",
-              background: "var(--bg-base)",
-            }}
+            className="relative w-full max-w-app border border-border-subtle p-6 paper-grain rounded-card border-l border-l-border-warm bg-bg-base"
           >
             {/* Close — subtle circle */}
             <button
               onClick={handleRequestClose}
-              className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full text-text-muted/30 transition-colors hover:text-text-muted/60"
+              className="absolute right-3 top-3 flex h-12 w-12 items-center justify-center rounded-full text-text-muted/30 transition-colors hover:text-text-muted/60"
             >
               <X size={15} />
             </button>
@@ -203,17 +196,17 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
             {/* Header — film-strip numbering feel */}
             <div className="mb-6 flex items-start justify-between pr-10">
               <div>
-                <div className="font-mono text-[10px] tracking-[0.2em] text-text-muted/30">
+                <div className="font-mono text-micro tracking-[0.2em] text-text-muted/30">
                   NO.{formatFrameNumber(frame.frameIndex)}
                 </div>
                 <div className="mt-1 font-mono text-xs tracking-wider text-text-secondary">
                   {frame.date} · {frame.time}
                 </div>
-                <div className="mt-1 font-mono text-[10px] text-text-muted/30">
+                <div className="mt-1 font-mono text-micro text-text-muted/30">
                   {frame.createdAt}
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-[10px]" style={{ color: statusColor }}>
+              <div className="flex items-center gap-3 text-micro" style={{ color: statusColor }}>
                 <span className="flex items-center gap-1">
                   {frame.type === "voice" ? <Mic size={10} /> : <Type size={10} />}
                   {frame.type === "voice"
@@ -233,16 +226,14 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     rows={6}
-                    className="w-full resize-none border border-border-subtle bg-bg-soft/60 px-4 py-3 text-base leading-relaxed text-text-primary focus:border-accent/25 focus:outline-none"
-                    style={{ borderRadius: "6px" }}
+                    className="w-full resize-none border border-border-subtle bg-bg-soft/60 px-4 py-3 text-base leading-relaxed text-text-primary focus:border-accent/25 focus:outline-none rounded-button"
                     placeholder="编辑这一帧…"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={handleSaveEdit}
                       disabled={!editContent.trim()}
-                      className="flex items-center gap-1 rounded px-3 py-2 text-xs transition-colors hover:opacity-80 disabled:opacity-30"
-                      style={{ background: "var(--accent)", color: "var(--bg-base)", borderRadius: "4px" }}
+                      className="flex items-center gap-1 rounded px-3 py-2 text-xs transition-colors hover:opacity-80 disabled:opacity-30 bg-accent text-bg-base"
                     >
                       <Check size={10} />
                       保存
@@ -250,7 +241,6 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
                     <button
                       onClick={handleCancelEdit}
                       className="rounded border border-border-subtle px-3 py-2 text-xs text-text-muted transition-colors hover:text-text-secondary"
-                      style={{ borderRadius: "4px" }}
                     >
                       取消
                     </button>
@@ -259,7 +249,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
               ) : (
                 <>
                   <p
-                    className={`text-base leading-relaxed text-text-primary ${
+                    className={`font-serif text-base leading-relaxed text-text-primary ${
                       !expanded && isLong ? "line-clamp-4" : ""
                     }`}
                   >
@@ -287,8 +277,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
 
             {/* Summary */}
             <div
-              className="mb-5 border border-border-subtle px-4 py-3"
-              style={{ borderRadius: "8px", background: "var(--surface-1)", opacity: 0.6 }}
+              className="mb-5 border border-border-subtle px-4 py-3 rounded-card bg-surface-1 opacity-60"
             >
               <p className="text-xs leading-relaxed text-text-muted/50">
                 {frame.summary}
@@ -298,13 +287,12 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
             {/* Tags — editable */}
             <div className="mb-5 flex flex-wrap items-center gap-1.5">
               {frame.tags.length === 0 && !isEditingTags && (
-                <span className="text-[10px] text-text-muted/20">暂无标签</span>
+                <span className="text-micro text-text-muted/20">暂无标签</span>
               )}
               {frame.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 border border-border-subtle bg-transparent px-2.5 py-1 text-[10px] text-text-muted"
-                  style={{ borderRadius: "3px" }}
+                  className="inline-flex items-center gap-1 border border-border-subtle bg-transparent px-2.5 py-1 text-micro text-text-muted rounded-tag"
                 >
                   {tag}
                   {isEditingTags && (
@@ -319,8 +307,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
               ))}
               {isEditingTags && (
                 <span
-                  className="inline-flex items-center border border-dashed border-border-subtle bg-transparent px-2 py-1"
-                  style={{ borderRadius: "3px" }}
+                  className="inline-flex items-center border border-dashed border-border-subtle bg-transparent px-2 py-1 rounded-tag"
                 >
                   <input
                     ref={newTagInputRef}
@@ -331,7 +318,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
                       if (e.key === "Escape") setNewTagValue("");
                     }}
                     placeholder="新标签"
-                    className="w-20 bg-transparent text-[10px] text-text-muted placeholder:text-text-muted/25 focus:outline-none"
+                    className="w-20 bg-transparent text-micro text-text-muted placeholder:text-text-muted/25 focus:outline-none"
                   />
                   <button
                     onClick={handleAddTag}
@@ -352,7 +339,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
               {isEditingTags && (
                 <button
                   onClick={() => setIsEditingTags(false)}
-                  className="ml-1 text-[10px] text-text-muted/30 transition-colors hover:text-text-muted/60"
+                  className="ml-1 text-micro text-text-muted/30 transition-colors hover:text-text-muted/60"
                 >
                   完成
                 </button>
@@ -362,8 +349,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
             {/* Actions */}
             {confirmingDelete ? (
               <div
-                className="flex flex-col gap-2 border px-4 py-3"
-                style={{ borderRadius: "8px", borderColor: "var(--border-warm)", background: "var(--surface-1)", opacity: 0.6 }}
+                className="flex flex-col gap-2 border px-4 py-3 rounded-card border-border-warm bg-surface-1 opacity-60"
               >
                 <p className="text-center text-xs text-text-muted/60">
                   移入回收站？7 天后自动清除。
@@ -371,21 +357,13 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
                 <div className="flex gap-2">
                   <button
                     onClick={() => setConfirmingDelete(false)}
-                    className="flex-1 border border-border-subtle py-2 text-xs text-text-muted transition-colors hover:text-text-secondary"
-                    style={{ borderRadius: "8px" }}
+                    className="flex-1 border border-border-subtle py-2 text-xs text-text-muted transition-colors hover:text-text-secondary rounded-card"
                   >
                     取消
                   </button>
                   <button
                     onClick={handleDelete}
-                    className="flex-1 py-2 text-xs transition-colors hover:opacity-80"
-                    style={{
-                      borderRadius: "8px",
-                      border: "1px solid var(--status-error)",
-                      color: "var(--status-error)",
-                      background: "var(--status-error)",
-                      opacity: 0.15,
-                    }}
+                    className="flex-1 py-2 text-xs transition-colors hover:opacity-80 rounded-card border border-status-error text-status-error bg-status-error opacity-[0.15]"
                   >
                     确认删除
                   </button>
@@ -395,16 +373,16 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleCopy(frame.content, "已复制原文")}
-                  className="flex flex-1 items-center justify-center gap-1.5 border border-border-subtle py-2 text-xs transition-colors hover:border-border-subtle/80 hover:text-text-primary active:scale-95"
-                  style={{ borderRadius: "8px", color: copied === "已复制原文" ? "var(--accent)" : undefined }}
+                  className="flex flex-1 items-center justify-center gap-1.5 border border-border-subtle py-2 text-xs transition-colors hover:border-border-subtle/80 hover:text-text-primary active:scale-95 rounded-card"
+                  style={{ color: copied === "已复制原文" ? "var(--accent)" : undefined }}
                 >
                   <Copy size={12} />
                   {copied === "已复制原文" ? "已复制" : "复制原文"}
                 </button>
                 <button
                   onClick={() => handleCopy(frame.summary, "已复制摘要")}
-                  className="flex flex-1 items-center justify-center gap-1.5 border border-border-subtle py-2 text-xs transition-colors hover:border-border-subtle/80 hover:text-text-primary active:scale-95"
-                  style={{ borderRadius: "8px", color: copied === "已复制摘要" ? "var(--accent)" : undefined }}
+                  className="flex flex-1 items-center justify-center gap-1.5 border border-border-subtle py-2 text-xs transition-colors hover:border-border-subtle/80 hover:text-text-primary active:scale-95 rounded-card"
+                  style={{ color: copied === "已复制摘要" ? "var(--accent)" : undefined }}
                 >
                   <Copy size={12} />
                   {copied === "已复制摘要" ? "已复制" : "复制摘要"}
@@ -412,16 +390,14 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
                 {!isEditing ? (
                   <button
                     onClick={handleStartEdit}
-                    className="flex h-11 w-11 flex-shrink-0 items-center justify-center border border-border-subtle transition-colors hover:border-border-subtle/80 hover:text-text-primary"
-                    style={{ borderRadius: "8px", color: "var(--text-muted)", opacity: 0.4 }}
+                    className="flex h-11 w-11 flex-shrink-0 items-center justify-center border border-border-subtle transition-colors hover:border-border-subtle/80 hover:text-text-primary rounded-card text-text-muted opacity-40"
                   >
                     <Edit3 size={14} />
                   </button>
                 ) : null}
                 <button
                   onClick={() => setConfirmingDelete(true)}
-                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center border border-border-subtle transition-colors hover:border-status-error/30"
-                  style={{ borderRadius: "8px", color: "var(--text-muted)", opacity: 0.4 }}
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center border border-border-subtle transition-colors hover:border-status-error/30 rounded-card text-text-muted opacity-40"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -431,13 +407,13 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
             {/* Export single frame */}
             <div className="mt-3 flex items-center gap-2 border-t border-border-soft pt-3">
               <Download size={10} className="text-text-muted/30" />
-              <span className="text-[10px] text-text-muted/30">导出此帧</span>
+              <span className="text-micro text-text-muted/30">导出此帧</span>
               <div className="flex gap-1">
                 {EXPORT_BTNS.map(({ label, fn }) => (
                   <button
                     key={label}
                     onClick={() => handleExportSingle(fn)}
-                    className="rounded border border-border-subtle px-2 py-0.5 text-[10px] text-text-muted/40 transition-colors hover:border-accent/20 hover:text-text-secondary"
+                    className="rounded border border-border-subtle px-2 py-0.5 text-micro text-text-muted/40 transition-colors hover:border-accent/20 hover:text-text-secondary"
                   >
                     {label}
                   </button>
@@ -453,38 +429,35 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate 
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute inset-0 z-10 flex items-center justify-center"
-                  style={{ borderRadius: "8px", background: "color-mix(in srgb, var(--bg-base) 92%, transparent)" }}
+                  className="absolute inset-0 z-10 flex items-center justify-center rounded-card"
+                  style={{ background: "color-mix(in srgb, var(--bg-base) 92%, transparent)" }}
                 >
                   <motion.div
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.95, opacity: 0 }}
-                    className="border px-5 py-4 text-center"
-                    style={{ borderRadius: "8px", borderColor: "var(--border-warm)", background: "var(--bg-soft)" }}
+                    className="border px-5 py-4 text-center rounded-card border-border-warm bg-bg-soft"
                   >
-                    <AlertTriangle size={16} className="mx-auto mb-2" style={{ color: "var(--accent-soft)" }} />
+                    <AlertTriangle size={16} className="mx-auto mb-2 text-accent-soft" />
                     <p className="mb-1 text-xs text-text-secondary">有未保存的修改</p>
-                    <p className="mb-4 text-[10px] text-text-muted/50">关闭将丢失已编辑的内容</p>
+                    <p className="mb-4 text-micro text-text-muted/50">关闭将丢失已编辑的内容</p>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setShowUnsavedWarning(false)}
-                        className="flex-1 rounded border border-border-subtle py-2 text-[10px] text-text-muted transition-colors hover:text-text-secondary"
+                        className="flex-1 rounded border border-border-subtle py-2 text-micro text-text-muted transition-colors hover:text-text-secondary"
                       >
                         继续编辑
                       </button>
                       <button
                         onClick={handleDiscardAndClose}
-                        className="flex-1 rounded py-2 text-[10px] transition-colors hover:opacity-80"
-                        style={{ border: "1px solid var(--status-error)", color: "var(--status-error)", background: "var(--status-error)", opacity: 0.12 }}
+                        className="flex-1 rounded py-2 text-micro transition-colors hover:opacity-80 border border-status-error text-status-error bg-status-error opacity-[0.12]"
                       >
                         放弃
                       </button>
                       <button
                         onClick={handleSaveAndClose}
                         disabled={!editContent.trim()}
-                        className="flex-1 rounded py-2 text-[10px] transition-colors hover:opacity-80 disabled:opacity-30"
-                        style={{ background: "var(--accent)", color: "var(--bg-base)" }}
+                        className="flex-1 rounded py-2 text-micro transition-colors hover:opacity-80 disabled:opacity-30 bg-accent text-bg-base"
                       >
                         保存并关闭
                       </button>

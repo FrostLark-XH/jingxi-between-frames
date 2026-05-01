@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MemoryFrame, TimeScale } from "@/data/demoFrames";
 import MemoryCard from "./MemoryCard";
@@ -28,12 +29,12 @@ function ScaleEmpty({ message }: { message: string }) {
       className="flex flex-col items-center justify-center py-16 text-center"
     >
       <p className="text-xs tracking-wider text-text-muted/25">{message}</p>
-      <p className="mt-1 text-[10px] tracking-wider text-text-muted/15">时间还没有显影到这里</p>
+      <p className="mt-1 text-micro tracking-wider text-text-muted/15">时间还没有显影到这里</p>
     </motion.div>
   );
 }
 
-export default function MemoryTimeline({
+export default memo(function MemoryTimeline({
   timeScale,
   data,
   onFrameClick,
@@ -57,11 +58,11 @@ export default function MemoryTimeline({
           </motion.div>
         ) : (
           <motion.div
-            key={`${timeScale}-${data.data.length}`}
-            initial={{ opacity: 0, filter: isMobile ? "blur(1px)" : "blur(3px)" }}
-            animate={{ opacity: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, filter: "blur(1px)" }}
-            transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            key={timeScale}
+            initial={{ opacity: 0, filter: "brightness(0.6) saturate(0.4)" }}
+            animate={{ opacity: 1, filter: "brightness(1) saturate(1)" }}
+            exit={{ opacity: 0, filter: "brightness(0.6) saturate(0.4)" }}
+            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
           >
             {/* Year view */}
             {timeScale === "year" && data.type === "year" && (
@@ -75,8 +76,7 @@ export default function MemoryTimeline({
                       initial={{ opacity: 0, y: 14 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.08, duration: 0.5 }}
-                      className="border border-border-subtle px-5 py-5"
-                      style={{ borderRadius: "6px", background: "var(--surface-1)" }}
+                      className="border border-border-subtle px-5 py-5 rounded-button bg-surface-1"
                     >
                       <div className="mb-2 font-mono text-lg font-medium text-text-primary">
                         {y.year}
@@ -91,14 +91,14 @@ export default function MemoryTimeline({
                       )}
                       {y.recentFrames.length > 0 && (
                         <div className="border-t border-border-soft pt-3">
-                          <p className="mb-2 text-[10px] text-text-muted/50">最近帧</p>
+                          <p className="mb-2 text-micro text-text-muted/50">最近帧</p>
                           {y.recentFrames.map((f) => (
                             <p key={f.id} className="truncate text-xs leading-relaxed text-text-muted/70">
                               {f.content.length > 40 ? f.content.substring(0, 40) + "…" : f.content}
                             </p>
                           ))}
                           {y.frameCount > 3 && (
-                            <p className="mt-1 text-[10px] text-text-muted/30">还有 {y.frameCount - 3} 帧</p>
+                            <p className="mt-1 text-micro text-text-muted/30">还有 {y.frameCount - 3} 帧</p>
                           )}
                         </div>
                       )}
@@ -120,8 +120,7 @@ export default function MemoryTimeline({
                       initial={{ opacity: 0, y: 14 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.08, duration: 0.5 }}
-                      className="border border-border-subtle px-5 py-5"
-                      style={{ borderRadius: "6px", background: "var(--surface-1)" }}
+                      className="border border-border-subtle px-5 py-5 rounded-button bg-surface-1"
                     >
                       <div className="mb-2 font-mono text-base font-medium text-text-primary">
                         {m.year}年{m.month}月
@@ -136,14 +135,14 @@ export default function MemoryTimeline({
                       )}
                       {m.recentFrames.length > 0 && (
                         <div className="border-t border-border-soft pt-3">
-                          <p className="mb-2 text-[10px] text-text-muted/50">最近帧</p>
+                          <p className="mb-2 text-micro text-text-muted/50">最近帧</p>
                           {m.recentFrames.map((f) => (
                             <p key={f.id} className="truncate text-xs leading-relaxed text-text-muted/70">
                               {f.content.length > 50 ? f.content.substring(0, 50) + "…" : f.content}
                             </p>
                           ))}
                           {m.frameCount > 3 && (
-                            <p className="mt-1 text-[10px] text-text-muted/30">还有 {m.frameCount - 3} 帧</p>
+                            <p className="mt-1 text-micro text-text-muted/30">还有 {m.frameCount - 3} 帧</p>
                           )}
                         </div>
                       )}
@@ -181,6 +180,7 @@ export default function MemoryTimeline({
                               key={frame.id}
                               frame={frame}
                               index={fi}
+                              isMobile={isMobile}
                               onClick={() => onFrameClick(frame)}
                             />
                           ))}
@@ -197,4 +197,4 @@ export default function MemoryTimeline({
       </AnimatePresence>
     </div>
   );
-}
+});

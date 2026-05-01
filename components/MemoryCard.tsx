@@ -4,16 +4,15 @@ import { memo } from "react";
 import { motion } from "framer-motion";
 import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { Eye, Type, Mic } from "lucide-react";
-import useIsMobile from "@/hooks/useIsMobile";
 
 type Props = {
   frame: MemoryFrame;
   index: number;
   onClick: () => void;
+  isMobile: boolean;
 };
 
-function MemoryCardInner({ frame, index, onClick }: Props) {
-  const isMobile = useIsMobile();
+function MemoryCardInner({ frame, index, onClick, isMobile }: Props) {
 
   const STATUS_LABEL: Record<MemoryFrame["status"], string> = {
     saved: "已保存",
@@ -46,27 +45,26 @@ function MemoryCardInner({ frame, index, onClick }: Props) {
         ease: [0.4, 0, 0.2, 1],
       }}
       onClick={onClick}
-      className="group relative cursor-pointer border border-border-subtle bg-bg-card py-4 pl-4 pr-4 transition-all hover:border-border-subtle/80 active:scale-[0.98]"
+      className="group relative cursor-pointer border border-border-subtle bg-bg-card py-4 pl-4 pr-4 transition-colors active:scale-[0.98] paper-grain rounded-card"
       style={{
-        borderRadius: "8px",
         borderLeftColor: defaultBorderLeft,
         transitionProperty: "all, border-left-color",
         opacity: cardOpacity,
       }}
-      whileHover={isMobile ? undefined : { y: -2, borderLeftColor: "var(--border-active)", opacity: 1 }}
+      whileHover={isMobile ? undefined : { y: -2, borderLeftColor: "var(--border-active)", opacity: 1, boxShadow: "0 4px 24px var(--accent-glow)" }}
     >
       {/* Time + frame number */}
       <div className="mb-3 flex items-center justify-between">
-        <span className="font-mono text-[11px] tracking-wider text-text-muted">
+        <span className="font-mono text-micro tracking-wider text-text-muted">
           {frame.date} · {frame.time}
         </span>
-        <span className="font-mono text-[10px] text-text-muted/50">
+        <span className="font-mono text-micro text-text-muted/50">
           第 {formatFrameNumber(frame.frameIndex)} 帧
         </span>
       </div>
 
       {/* User's text — visual focus */}
-      <p className="mb-3 line-clamp-4 text-[15px] leading-relaxed text-text-primary">
+      <p className="mb-3 line-clamp-4 font-serif text-base leading-relaxed text-text-primary">
         {frame.content}
       </p>
 
@@ -80,7 +78,7 @@ function MemoryCardInner({ frame, index, onClick }: Props) {
         {frame.tags.map((tag) => (
           <span
             key={tag}
-            className="border border-border-subtle bg-transparent px-2 py-0.5 text-[10px] text-text-muted"
+            className="border border-border-subtle bg-transparent px-2 py-0.5 text-micro text-text-muted"
             style={{ borderRadius: "3px" }}
           >
             {tag}
@@ -90,7 +88,7 @@ function MemoryCardInner({ frame, index, onClick }: Props) {
 
       {/* Footer: metadata + status */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 text-[10px] text-text-muted/50">
+        <div className="flex items-center gap-3 text-micro text-text-muted/50">
           <span className="flex items-center gap-1">
             {frame.type === "voice" ? <Mic size={10} /> : <Type size={10} />}
             {frame.type === "voice"
@@ -100,7 +98,7 @@ function MemoryCardInner({ frame, index, onClick }: Props) {
           <span style={{ color: statusColor }}>{STATUS_LABEL[frame.status]}</span>
         </div>
 
-        <span className="flex items-center gap-1 text-[10px] text-text-muted/30 opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="flex items-center gap-1 text-micro text-text-muted/30 opacity-0 transition-opacity group-hover:opacity-100">
           <Eye size={10} />
           查看
         </span>
@@ -115,7 +113,8 @@ function arePropsEqual(prev: Props, next: Props) {
     prev.frame.content === next.frame.content &&
     prev.frame.summary === next.frame.summary &&
     prev.frame.status === next.frame.status &&
-    prev.index === next.index
+    prev.index === next.index &&
+    prev.isMobile === next.isMobile
   );
 }
 

@@ -8,8 +8,7 @@ export default function MemoryCardSkeleton() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="relative overflow-hidden border border-border-subtle bg-bg-card px-4 py-4"
-      style={{ borderRadius: "6px" }}
+      className="relative overflow-hidden border border-border-subtle bg-bg-card px-4 py-4 rounded-button"
     >
       {/* Shimmer scan line */}
       <motion.div

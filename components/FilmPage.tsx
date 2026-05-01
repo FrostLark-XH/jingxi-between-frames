@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, memo } from "react";
 import { ArrowLeft } from "lucide-react";
 import { MemoryFrame, TimeScale } from "@/data/demoFrames";
 import TimeScaleSwitcher from "./TimeScaleSwitcher";
@@ -34,7 +34,7 @@ type Props = {
   onArchiveOpenChange?: (open: boolean) => void;
 };
 
-export default function FilmPage({
+export default memo(function FilmPage({
   timeScale,
   aggregatedData,
   selectedFrame,
@@ -84,7 +84,7 @@ export default function FilmPage({
           <ArrowLeft size={14} />
           <span>返回记录室</span>
         </button>
-        <div className="flex items-center gap-4 pr-10 sm:pr-12">
+        <div className="flex items-center gap-4 pr-4 sm:pr-12">
           {deletedFrames.length > 0 && (
             <RecycleBin
               deletedFrames={deletedFrames}
@@ -124,4 +124,4 @@ export default function FilmPage({
       <FrameDetailOverlay frame={selectedFrame} onClose={onFrameClose} onDelete={onDelete} onUpdate={onUpdate} />
     </div>
   );
-}
+});

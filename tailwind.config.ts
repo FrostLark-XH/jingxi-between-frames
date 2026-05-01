@@ -45,6 +45,7 @@ const config: Config = {
           '"Noto Sans SC"',
           "sans-serif",
         ],
+        serif: ['var(--font-serif)', '"Noto Serif SC"', 'serif'],
         mono: [
           '"SF Mono"',
           '"JetBrains Mono"',
@@ -52,8 +53,30 @@ const config: Config = {
           "monospace",
         ],
       },
+      fontSize: {
+        micro: ["0.75rem", { lineHeight: "1.5" }],
+        xs: ["0.75rem", { lineHeight: "1.6" }],
+        sm: ["0.8125rem", { lineHeight: "1.6" }],
+        base: ["0.9375rem", { lineHeight: "1.75" }],
+        lg: ["1.0625rem", { lineHeight: "1.7" }],
+        xl: ["1.25rem", { lineHeight: "1.5" }],
+        display: ["1.5rem", { lineHeight: "1.4" }],
+      },
+      letterSpacing: {
+        widest: "0.2em",
+        wider: "0.12em",
+        wide: "0.06em",
+        normal: "0",
+        tight: "-0.01em",
+      },
       maxWidth: {
         app: "480px",
+      },
+      borderRadius: {
+        card: "8px",
+        button: "6px",
+        tag: "3px",
+        panel: "10px",
       },
     },
   },
