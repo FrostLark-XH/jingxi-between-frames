@@ -2,8 +2,8 @@
 // Real AI → mock fallback. Never exposes API key to client.
 
 import { NextRequest, NextResponse } from "next/server";
-import { getDevelopFrameResult } from "@/services/ai";
 import { contentHash } from "@/services/ai/types";
+import { getDevelopFrameResult } from "@/services/ai/index";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,7 +22,9 @@ export async function POST(req: NextRequest) {
       ...result,
       contentHash: contentHash(content),
     });
-  } catch {
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[develop-frame] error:", msg);
     return NextResponse.json(
       { error: "develop-frame failed" },
       { status: 500 }
