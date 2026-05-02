@@ -40,6 +40,9 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
     useImperativeHandle(ref, () => ({
       async renderToBlob() {
         if (!containerRef.current) throw new Error("Export container not mounted");
+        await document.fonts?.ready;
+        await new Promise((r) => requestAnimationFrame(r));
+        await new Promise((r) => requestAnimationFrame(r));
         const blob = await toBlob(containerRef.current, {
           pixelRatio: 2,
           backgroundColor: t.bgBase,
@@ -59,15 +62,19 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
 
     return (
       <div
-        ref={containerRef}
         style={{
+          width: 0,
+          height: 0,
+          overflow: "visible",
           position: "fixed",
-          visibility: "hidden",
-          left: -9999,
+          left: 0,
           top: 0,
+          zIndex: 99999,
+          pointerEvents: "none",
         }}
       >
         <div
+          ref={containerRef}
           style={{
             width: CARD_W,
             padding: PADDING,
@@ -109,7 +116,7 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
                 style={{
                   fontSize: 28,
                   fontWeight: 600,
-                  fontFamily: "var(--font-serif), 'Noto Serif SC', 'Songti SC', serif",
+                  fontFamily: "'Noto Serif SC', 'Songti SC', serif",
                   letterSpacing: "0.08em",
                   marginBottom: 8,
                 }}
@@ -193,7 +200,7 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
                     style={{
                       fontSize: 18,
                       lineHeight: 1.7,
-                      fontFamily: "var(--font-serif), 'Noto Serif SC', 'Songti SC', serif",
+                      fontFamily: "'Noto Serif SC', 'Songti SC', serif",
                       letterSpacing: "0.04em",
                       margin: 0,
                     }}
@@ -208,7 +215,7 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
                     fontSize: 14,
                     lineHeight: 1.7,
                     color: textMuted,
-                    fontFamily: "var(--font-serif), 'Noto Serif SC', 'Songti SC', serif",
+                    fontFamily: "'Noto Serif SC', 'Songti SC', serif",
                     letterSpacing: "0.03em",
                     marginBottom: 14,
                     whiteSpace: "pre-wrap",

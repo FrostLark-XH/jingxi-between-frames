@@ -35,6 +35,10 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
   useImperativeHandle(ref, () => ({
     async renderToBlob() {
       if (!containerRef.current) throw new Error("Export container not mounted");
+      // Ensure fonts are loaded and layout is painted before capture
+      await document.fonts?.ready;
+      await new Promise((r) => requestAnimationFrame(r));
+      await new Promise((r) => requestAnimationFrame(r));
       const blob = await toBlob(containerRef.current, {
         pixelRatio: 2,
         backgroundColor: t.bgBase,
@@ -51,15 +55,19 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
 
   return (
     <div
-      ref={containerRef}
       style={{
+        width: 0,
+        height: 0,
+        overflow: "visible",
         position: "fixed",
-        visibility: "hidden",
-        left: -9999,
+        left: 0,
         top: 0,
+        zIndex: 99999,
+        pointerEvents: "none",
       }}
     >
       <div
+        ref={containerRef}
         style={{
           width: CARD_W,
           padding: PADDING,
@@ -146,7 +154,7 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
               style={{
                 fontSize: 22,
                 lineHeight: 1.8,
-                fontFamily: "var(--font-serif), 'Noto Serif SC', 'Songti SC', serif",
+                fontFamily: "'Noto Serif SC', 'Songti SC', serif",
                 letterSpacing: "0.04em",
                 margin: 0,
               }}
@@ -161,7 +169,7 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
               fontSize: 15,
               lineHeight: 1.75,
               color: textMuted,
-              fontFamily: "var(--font-serif), 'Noto Serif SC', 'Songti SC', serif",
+              fontFamily: "'Noto Serif SC', 'Songti SC', serif",
               letterSpacing: "0.03em",
               marginBottom: 24,
               whiteSpace: "pre-wrap",
