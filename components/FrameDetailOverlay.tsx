@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { toJSON, toMarkdown, toTXT } from "@/lib/exportFrames";
 import { contentHash, isAiStale } from "@/services/ai/types";
-import { X, Copy, Type, Mic, ChevronDown, ChevronUp, Trash2, Edit3, Check, Plus, Download, AlertTriangle, RefreshCw } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
+import FrameImageExport, { ImageExportHandle } from "./FrameImageExport";
+import { X, Copy, Type, Mic, ChevronDown, ChevronUp, Trash2, Edit3, Check, Plus, Download, AlertTriangle, RefreshCw, Image } from "lucide-react";
 
 type Props = {
   frame: MemoryFrame | null;
@@ -37,6 +39,9 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
   const [newTagValue, setNewTagValue] = useState("");
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [redeveloping, setRedeveloping] = useState(false);
+  const [exportingImage, setExportingImage] = useState(false);
+  const exportRef = useRef<ImageExportHandle>(null);
+  const { themeId } = useTheme();
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const newTagInputRef = useRef<HTMLInputElement>(null);
 
@@ -142,6 +147,34 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
       showToast("重新显影失败，保留原有摘要");
     } finally {
       setRedeveloping(false);
+    }
+  };
+
+  const handleExportImage = async () => {
+    if (!frame || exportingImage || !exportRef.current) return;
+    setExportingImage(true);
+    try {
+      const blob = await exportRef.current.renderToBlob();
+      const filename = `jingxi_frame_NO.${formatFrameNumber(frame.frameIndex)}.png`;
+      const file = new File([blob], filename, { type: "image/png" });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return; // user cancelled share
+      showToast("导出图片失败，请重试");
+    } finally {
+      setExportingImage(false);
     }
   };
 
@@ -483,6 +516,14 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
               <Download size={10} className="text-text-muted/30" />
               <span className="text-micro text-text-muted/30">导出此帧</span>
               <div className="flex gap-1">
+                <button
+                  onClick={handleExportImage}
+                  disabled={exportingImage}
+                  className="flex items-center gap-1 rounded border border-accent/20 bg-accent/5 px-2 py-0.5 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-40"
+                >
+                  <Image size={10} />
+                  {exportingImage ? "导出中…" : "PNG"}
+                </button>
                 {EXPORT_BTNS.map(({ label, fn }) => (
                   <button
                     key={label}
@@ -540,6 +581,9 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Image export card (hidden, used for PNG rendering) */}
+            <FrameImageExport ref={exportRef} frame={frame} themeId={themeId} />
           </motion.div>
         </motion.div>
       )}
