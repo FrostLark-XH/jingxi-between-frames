@@ -170,8 +170,8 @@ function generateTags(content: string): string[] {
     tags.add("帧");
   }
 
-  // Cap at 4 tags, prefer topic/emotion over frequency scraps
-  return [...tags].slice(0, 4);
+  // Cap at 3 tags, prefer topic/emotion over frequency scraps
+  return [...tags].slice(0, 3);
 }
 
 // ── Tone detection ─────────────────────────────────────────────────────────
@@ -200,7 +200,7 @@ function generateDayMainline(input: DaySummaryInput): DaySummaryOutput {
   if (frames.length === 0) {
     return {
       mainline: "今天还没有留下帧。",
-      keywords: [],
+      themes: [],
       reviewHint: "可以回去记录一下今天。",
       provider: "mock",
     };
@@ -208,7 +208,7 @@ function generateDayMainline(input: DaySummaryInput): DaySummaryOutput {
   if (frames.length === 1) {
     return {
       mainline: "今天只留下了一帧，它记录了一个很具体的时刻。",
-      keywords: frames[0].tags.slice(0, 3),
+      themes: frames[0].tags.slice(0, 3),
       reviewHint: "可以回看这一帧原始记录。",
       provider: "mock",
     };
@@ -226,13 +226,13 @@ function generateDayMainline(input: DaySummaryInput): DaySummaryOutput {
     .sort(([, a], [, b]) => b - a)
     .slice(0, 3);
 
-  const keywords = sortedTags.map(([t]) => t);
+  const themes = sortedTags.map(([t]) => t);
   const topTag = sortedTags[0];
 
   if (topTag && topTag[1] >= frames.length * 0.6) {
     return {
       mainline: `今天的关键词是「${topTag[0]}」。`,
-      keywords,
+      themes,
       reviewHint: `可以围绕「${topTag[0]}」回看今天的帧。`,
       provider: "mock",
     };
@@ -241,7 +241,7 @@ function generateDayMainline(input: DaySummaryInput): DaySummaryOutput {
   if (sortedTags.length >= 2) {
     return {
       mainline: `今天似乎围绕着「${sortedTags.map(([t]) => t).join("」与「")}」展开。`,
-      keywords,
+      themes,
       reviewHint: "不妨回看今天的帧，也许会发现新的线索。",
       provider: "mock",
     };
@@ -249,7 +249,7 @@ function generateDayMainline(input: DaySummaryInput): DaySummaryOutput {
 
   return {
     mainline: `你在${date}留下了 ${frames.length} 帧。`,
-    keywords,
+    themes,
     reviewHint: "可以回看今天的帧。",
     provider: "mock",
   };
@@ -263,11 +263,9 @@ export const mockAiProvider: AiProvider & DaySummaryProvider = {
   async processFrame(input: FrameInput): Promise<FrameAiOutput> {
     const summary = generateSummary(input.content);
     const tags = generateTags(input.content);
-    const keywords = tags.slice(0, 3);
     return {
       summary,
       tags,
-      keywords,
       tone: detectTone(input.content),
       provider: "mock",
     };

@@ -5,24 +5,43 @@
 import { FrameAiOutput, DaySummaryOutput, DaySummaryInput } from "./types";
 import { buildDevelopFramePrompt, buildSummarizeDayPrompt } from "./prompts";
 
-function getConfig() {
-  const key = process.env.LLM_API_KEY;
+type Provider = "siliconflow" | "dmxapi" | "openai";
+
+function detectProvider(): { provider: Provider; key: string; baseUrl: string; model: string } {
+  const key = process.env.LLM_API_KEY || "";
   const baseUrl = process.env.LLM_BASE_URL || "https://api.openai.com/v1";
   const model = process.env.LLM_MODEL || "gpt-4o-mini";
-  return { key, baseUrl, model };
+  const explicitProvider = process.env.LLM_PROVIDER?.toLowerCase();
+
+  let provider: Provider;
+  if (explicitProvider === "siliconflow") {
+    provider = "siliconflow";
+  } else if (explicitProvider === "dmxapi") {
+    provider = "dmxapi";
+  } else if (baseUrl.includes("dmxapi.cn")) {
+    provider = "dmxapi";
+  } else if (baseUrl.includes("siliconflow.cn")) {
+    provider = "siliconflow";
+  } else {
+    provider = "openai";
+  }
+
+  return { provider, key, baseUrl, model };
 }
 
-async function callLlm(prompt: string): Promise<string> {
-  const { key, baseUrl, model } = getConfig();
+async function callLlm(prompt: string): Promise<{ raw: string; model: string }> {
+  const { provider, key, baseUrl, model } = detectProvider();
   if (!key) throw new Error("LLM_API_KEY not configured");
+
+  // SiliconFlow / OpenAI → Bearer auth; DMXAPI → raw key
+  const authHeader = provider === "dmxapi" ? key : `Bearer ${key}`;
 
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      Authorization: key,
-      "User-Agent": "DMXAPI/1.0.0 (https://ssvip.dmxapi.com)",
+      Authorization: authHeader,
     },
     body: JSON.stringify({
       model,
@@ -51,7 +70,7 @@ async function callLlm(prompt: string): Promise<string> {
   if (!raw || typeof raw !== "string") {
     throw new Error("LLM returned empty or invalid response");
   }
-  return raw.trim();
+  return { raw: raw.trim(), model: data.model || model };
 }
 
 function parseJson<T>(raw: string, label: string): T {
@@ -80,20 +99,17 @@ export async function developFrameReal(
   content: string,
   createdAt: string
 ): Promise<FrameAiOutput> {
-  const { model } = getConfig();
   const prompt = buildDevelopFramePrompt(content, createdAt);
-  const raw = await callLlm(prompt);
+  const { raw, model } = await callLlm(prompt);
   const parsed = parseJson<{
     summary: string;
     tags: string[];
-    keywords?: string[];
     tone?: string;
   }>(raw, "develop-frame");
 
   return {
     summary: parsed.summary || content.substring(0, 48),
-    tags: Array.isArray(parsed.tags) ? parsed.tags.slice(0, 4) : [],
-    keywords: Array.isArray(parsed.keywords) ? parsed.keywords.slice(0, 5) : [],
+    tags: Array.isArray(parsed.tags) ? parsed.tags.slice(0, 3) : [],
     tone: parsed.tone || "平静",
     provider: "real",
     model,
@@ -103,18 +119,17 @@ export async function developFrameReal(
 export async function summarizeDayReal(
   input: DaySummaryInput
 ): Promise<DaySummaryOutput> {
-  const { model } = getConfig();
   const prompt = buildSummarizeDayPrompt(input.date, input.frames);
-  const raw = await callLlm(prompt);
+  const { raw, model } = await callLlm(prompt);
   const parsed = parseJson<{
     mainline: string;
-    keywords: string[];
+    themes: string[];
     reviewHint: string;
   }>(raw, "summarize-day");
 
   return {
     mainline: parsed.mainline || "今天的记录比较分散。",
-    keywords: Array.isArray(parsed.keywords) ? parsed.keywords.slice(0, 5) : [],
+    themes: Array.isArray(parsed.themes) ? parsed.themes.slice(0, 5) : [],
     reviewHint: parsed.reviewHint || "可以回看今天的原始记录。",
     provider: "real",
     model,

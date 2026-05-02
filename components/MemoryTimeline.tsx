@@ -42,7 +42,7 @@ export default memo(function MemoryTimeline({
 }: Props) {
   const isMobile = useIsMobile();
   const [aiDaySummaries, setAiDaySummaries] = useState<
-    Record<string, { mainline: string; keywords: string[]; reviewHint: string }>
+    Record<string, { mainline: string; themes: string[]; reviewHint: string }>
   >({});
 
   // Fetch AI day summaries for day view; falls back to rule-based silently
@@ -75,7 +75,7 @@ export default memo(function MemoryTimeline({
                 ...prev,
                 [day.date]: {
                   mainline: json.mainline,
-                  keywords: json.keywords,
+                  themes: json.themes,
                   reviewHint: json.reviewHint,
                 },
               }));

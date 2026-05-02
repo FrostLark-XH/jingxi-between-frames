@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { MemoryFrame } from "@/data/demoFrames";
 import { contentHash } from "@/services/ai/types";
 import { getAiProvider } from "@/services/ai";
+import { formatText } from "@/lib/textFormat";
 import useIsMobile from "@/hooks/useIsMobile";
 import MemoryInput from "./MemoryInput";
 import ActionBar from "./ActionBar";
@@ -15,7 +16,7 @@ type Props = {
   onDraftChange: (text: string) => void;
   onDraftClear: () => void;
   onSave: (frame: MemoryFrame) => void;
-  onUpdateFrame: (id: string, changes: Partial<Pick<MemoryFrame, "summary" | "tags" | "keywords" | "tone" | "ai">>) => void;
+  onUpdateFrame: (id: string, changes: Partial<Pick<MemoryFrame, "summary" | "tags" | "tone" | "ai">>) => void;
   onViewFilm: () => void;
   todayFrameCount: number;
   nextFrameIndex: number;
@@ -51,12 +52,14 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
   }, [isMobile]);
 
   const handleSave = async () => {
-    const trimmed = draftText.trim();
-    if (!trimmed) {
+    // Validate before formatting — formatText("   ") would still be non-empty
+    if (!draftText.trim()) {
       showToast("先写下些什么吧");
       return;
     }
     if (isDeveloping) return;
+
+    const formatted = formatText(draftText);
 
     setIsDeveloping(true);
 
@@ -66,20 +69,19 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
       const iso = now.toISOString();
       const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")}`;
       const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-      const wordCount = trimmed.length;
-      const hash = contentHash(trimmed);
+      const wordCount = formatted.length;
+      const hash = contentHash(formatted);
 
       const frameId = `frame-${Date.now()}`;
       const frame: MemoryFrame = {
         id: frameId,
-        content: trimmed,
-        preview: trimmed.length > 100 ? trimmed.substring(0, 100) + "…" : trimmed,
+        content: formatted,
+        preview: formatted.length > 100 ? formatted.substring(0, 100) + "…" : formatted,
         date: dateStr,
         time: timeStr,
         frameIndex: nextFrameIndex,
         summary: "",
         tags: [],
-        keywords: [],
         tone: "平静",
         wordCount,
         type: "text",
@@ -97,14 +99,13 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
         const res = await fetch("/api/ai/develop-frame", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: trimmed, createdAt: iso }),
+          body: JSON.stringify({ content: formatted, createdAt: iso }),
         });
         if (res.ok) {
           const data = await res.json();
           onUpdateFrame(frameId, {
             summary: data.summary || "",
             tags: data.tags || [],
-            keywords: data.keywords || [],
             tone: data.tone || "平静",
             ai: {
               provider: data.provider || "mock",
@@ -121,11 +122,10 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
       // Mock fallback in background
       try {
         const provider = getAiProvider();
-        const mockResult = await provider.processFrame({ content: trimmed });
+        const mockResult = await provider.processFrame({ content: formatted });
         onUpdateFrame(frameId, {
           summary: mockResult.summary || "",
           tags: mockResult.tags || [],
-          keywords: mockResult.keywords || [],
           tone: mockResult.tone || "平静",
         });
       } catch { /* silent — frame is already saved */ }

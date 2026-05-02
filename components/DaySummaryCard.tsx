@@ -11,7 +11,7 @@ type Props = {
   frames: MemoryFrame[];
   aiDaySummary?: {
     mainline: string;
-    keywords: string[];
+    themes: string[];
     reviewHint: string;
   };
 };
@@ -80,7 +80,7 @@ function generateMainThread(frames: MemoryFrame[], topTags: string[]): string | 
 export default function DaySummaryCard({ date, frameCount, topTags, frames, aiDaySummary }: Props) {
   const ruleBasedMainThread = useMemo(() => generateMainThread(frames, topTags), [frames, topTags]);
   const mainThread = aiDaySummary?.mainline ?? ruleBasedMainThread;
-  const displayKeywords = aiDaySummary?.keywords ?? topTags;
+  const displayThemes = aiDaySummary?.themes ?? topTags;
 
   return (
     <motion.div
@@ -118,10 +118,10 @@ export default function DaySummaryCard({ date, frameCount, topTags, frames, aiDa
         style={{ background: "var(--border-soft)" }}
       />
 
-      {/* Recurring words */}
-      {displayKeywords.length > 0 && (
+      {/* Recurring themes */}
+      {displayThemes.length > 0 && (
         <p className="text-xs leading-relaxed tracking-wider text-text-muted">
-          今天反复出现的词：{displayKeywords.join(" / ")}
+          这一卷的主题：{displayThemes.join(" / ")}
         </p>
       )}
     </motion.div>

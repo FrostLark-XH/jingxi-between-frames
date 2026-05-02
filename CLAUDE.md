@@ -1,6 +1,6 @@
-# 镜隙之间 v0.6
+# 镜隙之间 v0.7
 
-> Agent 操作约定。保持简洁，避免过时。V0.6 Freeze 详见 `docs/V0.6_FREEZE.md`。
+> Agent 操作约定。保持简洁，避免过时。V0.7 开发中（分支 `feature/v0.7-redevelop-frame`），尚未 Freeze。V0.6 Freeze 详见 `docs/V0.6_FREEZE.md`。
 
 ## 技术栈
 
@@ -70,12 +70,29 @@ v0.3/
 
 ## 核心模式
 
-- **显影动画**：保存时 `isDeveloping=true` → 600ms blur + overlay pulse → `addFrame()` → 清空草稿
+- **显影动画**：保存时 `isDeveloping=true` → 650ms 后 `addFrame()` → 清空草稿。AI 在后台静默处理
+- **后台 AI 显影**：帧立即保存，AI（real → mock fallback）在后台更新 summary/tags/tone，不阻塞用户
+- **重新显影**：编辑原文后 FrameDetailOverlay 检测 `contentHash` 变化，可一键重新调用 AI
+- **保存自动缩进**：`formatText()` 在保存时自动为每段添加 `　　`（全角空格）首行缩进
 - **软删除**：设置 `deletedAt` 字段，7 天自动清除
 - **移动端检测**：`useIsMobile()` hook，`< 768px`
 - **移动端保存条**：`fixed bottom-0` + `env(safe-area-inset-bottom)`，复用 ActionBar 组件
-- **草稿保留**：页面切换/刷新不丢文字
+- **草稿保留**：页面切换/刷新不丢文字（key: `jingxi_draft`，300ms debounce）
 - **时间尺度解锁**：< 10 帧仅日，< 30 加月，≥ 30 加年
+
+## AI 数据结构
+
+单帧显影（`/api/ai/develop-frame`）：
+```ts
+{ summary: string, tags: string[], tone: string }  // tags 2-3个，tone 10种固定分类
+```
+
+日卷总结（`/api/ai/summarize-day`）：
+```ts
+{ mainline: string, themes: string[], reviewHint: string }  // themes 3-5个
+```
+
+`MemoryFrame` 保留 `keywords?: string[]` 仅向后兼容，新帧不再生成。
 
 ## 边界
 
@@ -102,3 +119,5 @@ node tests/e2e.cjs  # E2E 测试（需要先 npm run dev）
 - 修改 `useAppState.ts` 的 localStorage 结构需要更新 `migrateFrame()` 兼容旧数据
 - 桌面端和移动端按钮渲染路径不同（`!isMobile` vs `showStickyBar`），改 ActionBar 逻辑时两边都要检查
 - ArchivePanel 关闭按钮 touch 区 48px（`p-2`）
+- AI 字段：新帧只有 `summary/tags/tone`，旧帧 `keywords` 由 `migrateFrame()` 保留但不被 UI 读取
+- Prompt 角色："暗房显影师 / 轻文学整理者"，summary 要求"克制的轻诗意"

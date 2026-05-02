@@ -11,7 +11,7 @@ type Props = {
   frame: MemoryFrame | null;
   onClose: () => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary" | "keywords" | "tone" | "ai">>) => void;
+  onUpdate: (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary" | "tone" | "ai">>) => void;
   showToast: (message: string) => void;
 };
 
@@ -132,7 +132,6 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
         onUpdate(frame.id, {
           summary: data.summary || frame.summary,
           tags: data.tags || frame.tags,
-          keywords: data.keywords || [],
           tone: data.tone || "平静",
           ai: newAi,
         });
@@ -350,22 +349,12 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
               )}
             </div>
 
-            {/* Keywords + tone — AI metadata badges */}
-            {(frame.keywords && frame.keywords.length > 0 || frame.tone) && (
+            {/* AI tone badge */}
+            {frame.tone && (
               <div className="mb-5 flex flex-wrap items-center gap-1.5">
-                {frame.tone && (
-                  <span className="inline-flex items-center border border-accent/15 bg-accent/5 px-2 py-0.5 text-micro text-accent/60 rounded-tag">
-                    {frame.tone}
-                  </span>
-                )}
-                {frame.keywords && frame.keywords.map((kw) => (
-                  <span
-                    key={kw}
-                    className="inline-flex items-center border border-border-subtle bg-transparent px-2 py-0.5 text-micro text-text-muted/35 rounded-tag"
-                  >
-                    {kw}
-                  </span>
-                ))}
+                <span className="inline-flex items-center border border-accent/15 bg-accent/5 px-2 py-0.5 text-micro text-accent/60 rounded-tag">
+                  {frame.tone}
+                </span>
               </div>
             )}
 

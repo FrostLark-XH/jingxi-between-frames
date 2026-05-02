@@ -102,7 +102,7 @@ type Action =
   | { type: "SET_MONTH"; month: string }
   | { type: "SET_DATE"; date: string }
   | { type: "ADD_FRAME"; frame: MemoryFrame }
-  | { type: "UPDATE_FRAME"; id: string; changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary" | "keywords" | "tone" | "ai">> }
+  | { type: "UPDATE_FRAME"; id: string; changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary" | "tone" | "ai">> }
   | { type: "DELETE_FRAME"; id: string }
   | { type: "RESTORE_FRAME"; id: string }
   | { type: "PERMANENTLY_DELETE_FRAME"; id: string }
@@ -207,7 +207,7 @@ export default function useAppState() {
   );
 
   const updateFrame = useCallback(
-    (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary" | "keywords" | "tone" | "ai">>) =>
+    (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary" | "tone" | "ai">>) =>
       dispatch({ type: "UPDATE_FRAME", id, changes }),
     []
   );

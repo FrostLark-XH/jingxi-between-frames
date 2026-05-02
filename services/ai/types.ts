@@ -10,7 +10,6 @@ export type FrameInput = {
 export type FrameAiOutput = {
   summary: string;
   tags: string[];
-  keywords?: string[];
   tone?: string;
   provider?: AiProviderName;
   model?: string;
@@ -28,7 +27,7 @@ export type DaySummaryInput = {
 
 export type DaySummaryOutput = {
   mainline: string;
-  keywords: string[];
+  themes: string[];
   reviewHint: string;
   provider: AiProviderName;
   model?: string;
