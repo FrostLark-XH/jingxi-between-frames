@@ -3,13 +3,4 @@
 
 name = "jingxi-between-frames"
 compatibility_date = "2025-05-02"
-
-# Environment variables (set via `wrangler pages deploy` or Cloudflare Dashboard)
-# [vars]
-# LLM_API_KEY = "..."
-# LLM_BASE_URL = "https://www.dmxapi.cn"
-# LLM_MODEL = "deepseek-v4-pro-guan"
-
-[[services]]
-binding = "ASSETS"
-service = "jingxi-between-frames-assets"
+compatibility_flags = ["nodejs_compat"]
