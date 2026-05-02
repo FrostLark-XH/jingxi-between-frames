@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Archive, X, FileJson, FileText, File, Check, Download } from "lucide-react";
-import { MemoryFrame } from "@/data/demoFrames";
+import { Archive, X, FileJson, FileText, File as FileIcon, Check, Download, Image } from "lucide-react";
+import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { toJSON, toMarkdown, toTXT, type ExportOptions } from "@/lib/exportFrames";
+import { useTheme } from "@/hooks/useTheme";
+import FrameImageExport, { ImageExportHandle } from "./FrameImageExport";
 
 type Props = {
   frames: MemoryFrame[];
@@ -24,7 +26,7 @@ function groupByDate(frames: MemoryFrame[]): Map<string, MemoryFrame[]> {
 const EXPORT_BTNS = [
   { label: "JSON", icon: <FileJson size={10} />, fn: toJSON },
   { label: "MD", icon: <FileText size={10} />, fn: toMarkdown },
-  { label: "TXT", icon: <File size={10} />, fn: toTXT },
+  { label: "TXT", icon: <FileIcon size={10} />, fn: toTXT },
 ];
 
 const OPTION_LABELS: { key: keyof ExportOptions; label: string }[] = [
@@ -37,6 +39,9 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
   const [open, setOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [exportOpts, setExportOpts] = useState<ExportOptions>({ content: true, tags: true, summary: true });
+  const [exportingImage, setExportingImage] = useState(false);
+  const exportRef = useRef<ImageExportHandle>(null);
+  const { themeId } = useTheme();
 
   const toggleOption = (key: keyof ExportOptions) => {
     setExportOpts((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -81,6 +86,35 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
       for (const id of dateIds) next.add(id);
     }
     setSelectedIds(next);
+  };
+
+  const singleFrame = selectedIds.size === 1 ? frames.find((f) => selectedIds.has(f.id)) ?? null : null;
+
+  const handleExportImage = async () => {
+    if (!singleFrame || exportingImage || !exportRef.current) return;
+    setExportingImage(true);
+    try {
+      const blob = await exportRef.current.renderToBlob();
+      const filename = `jingxi_frame_NO.${formatFrameNumber(singleFrame.frameIndex)}.png`;
+      const file = new File([blob], filename, { type: "image/png" });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+    } finally {
+      setExportingImage(false);
+    }
   };
 
   return (
@@ -199,6 +233,14 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                             {label}
                           </button>
                         ))}
+                        <button
+                          onClick={handleExportImage}
+                          disabled={exportingImage || frames.length === 0}
+                          className="flex items-center gap-1 rounded border border-accent/20 bg-accent/5 px-2.5 py-1 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-30"
+                        >
+                          <Image size={10} />
+                          {exportingImage ? "导出中…" : "PNG"}
+                        </button>
                       </div>
                     </div>
 
@@ -297,8 +339,23 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                         {label}
                       </button>
                     ))}
+                    {singleFrame && (
+                      <button
+                        onClick={handleExportImage}
+                        disabled={exportingImage}
+                        className="flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-2.5 py-1 text-micro transition-colors hover:bg-accent/20 text-accent disabled:opacity-40"
+                      >
+                        <Image size={10} />
+                        {exportingImage ? "导出中…" : "PNG"}
+                      </button>
+                    )}
                   </div>
                 </div>
+              )}
+
+              {/* Hidden image export card */}
+              {singleFrame && (
+                <FrameImageExport ref={exportRef} frame={singleFrame} themeId={themeId} />
               )}
             </motion.aside>
           </>
