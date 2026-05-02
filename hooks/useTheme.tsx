@@ -42,6 +42,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
     applyThemeToDocument(themes[themeId]);
+    document.documentElement.removeAttribute("data-theme-loading");
 
     // Update <meta name="theme-color"> for browser chrome
     const meta = document.querySelector('meta[name="theme-color"]');

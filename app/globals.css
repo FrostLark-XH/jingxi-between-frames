@@ -88,6 +88,50 @@ body {
   border-radius: 1px;
 }
 
+/* ── Theme FOUC prevention ────────────────────────────────────────────
+   Inline script sets data-theme before first paint, and
+   data-theme-loading suppresses color transitions during initial load. */
+
+html[data-theme-loading] *,
+html[data-theme-loading] *::before,
+html[data-theme-loading] *::after {
+  transition: none !important;
+}
+
+/* ── Theme: 暖玫旧纸 (dusk-bean) ────────────────────────────────────── */
+
+[data-theme="dusk-bean"] {
+  --bg-base: #1F191B;
+  --bg-soft: #292024;
+  --accent: #C88070;
+  --accent-soft: #A06055;
+  --accent-glow: rgba(160,96,85,0.28);
+  --text-primary: #F1E8E3;
+  --status-error: #C4756E;
+  --bg-base-rgb: 31 25 27;
+  --bg-soft-rgb: 41 32 36;
+  --accent-rgb: 200 128 112;
+  --text-primary-rgb: 241 232 227;
+  --status-error-rgb: 196 117 110;
+}
+
+/* ── Theme: 晨雾米纸 (morning-grey) ─────────────────────────────────── */
+
+[data-theme="morning-grey"] {
+  --bg-base: #ECE6DC;
+  --bg-soft: #E3DCCF;
+  --accent: #A07858;
+  --accent-soft: #C8A890;
+  --accent-glow: rgba(200,168,144,0.32);
+  --text-primary: #2C2824;
+  --status-error: #B56860;
+  --bg-base-rgb: 236 230 220;
+  --bg-soft-rgb: 227 220 207;
+  --accent-rgb: 160 120 88;
+  --text-primary-rgb: 44 40 36;
+  --status-error-rgb: 181 104 96;
+}
+
 html:not(.hydrated) [style*="opacity:0"],
 html:not(.hydrated) [style*="opacity: 0"] {
   opacity: 1 !important;

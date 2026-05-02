@@ -26,7 +26,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#1a1a1e",
+  themeColor: "#13161A",
 };
 
 export default function RootLayout({
@@ -35,7 +35,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+  try {
+    var theme = localStorage.getItem("jingxi_theme") || "mist-darkroom";
+    var root = document.documentElement;
+    root.setAttribute("data-theme", theme);
+    root.setAttribute("data-theme-loading", "");
+    root.style.colorScheme = theme === "morning-grey" ? "light" : "dark";
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      var colors = { "mist-darkroom": "#13161A", "dusk-bean": "#1F191B", "morning-grey": "#ECE6DC" };
+      meta.setAttribute("content", colors[theme] || "#13161A");
+    }
+  } catch (e) {}
+})();`,
+          }}
+        />
+      </head>
       <body>
         <ThemeProvider>{children}</ThemeProvider>
       </body>

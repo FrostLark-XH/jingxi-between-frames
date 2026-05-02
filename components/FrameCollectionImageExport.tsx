@@ -4,6 +4,7 @@ import { forwardRef, useImperativeHandle, useRef } from "react";
 import { toBlob } from "html-to-image";
 import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { ThemeId, themes } from "@/lib/themes";
+import { hexToRgba, isMobileUA } from "@/lib/exportImage";
 
 export type CollectionExportHandle = {
   renderToBlob: () => Promise<Blob>;
@@ -15,8 +16,8 @@ type Props = {
 };
 
 const CARD_W = 750;
-const PADDING = 40;
-const GAP = 24;
+const PADDING = 56;
+const GAP = 28;
 
 const GRAIN_SVG =
   "data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E";
@@ -44,7 +45,7 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
         await new Promise((r) => requestAnimationFrame(r));
         await new Promise((r) => requestAnimationFrame(r));
         const blob = await toBlob(containerRef.current, {
-          pixelRatio: 2,
+          pixelRatio: isMobileUA() ? 1.5 : 2,
           backgroundColor: t.bgBase,
           cacheBust: true,
         });
@@ -54,9 +55,12 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
     }));
 
     const accentSoft = t.accentSoft;
-    const textMuted = `color-mix(in srgb, ${t.textPrimary} 45%, transparent)`;
-    const textMutedLow = `color-mix(in srgb, ${t.textPrimary} 25%, transparent)`;
-    const borderSoft = `color-mix(in srgb, ${t.textPrimary} 8%, transparent)`;
+    const textMuted = hexToRgba(t.textPrimary, 0.45);
+    const textMutedLow = hexToRgba(t.textPrimary, 0.25);
+    const textSummary = hexToRgba(t.textPrimary, 0.55);
+    const borderSoft = hexToRgba(t.textPrimary, 0.07);
+    const tagBg = hexToRgba(t.accent, 0.08);
+    const tagColor = hexToRgba(t.textPrimary, 0.6);
 
     if (frames.length === 0) return null;
 
@@ -65,12 +69,10 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
         style={{
           width: 0,
           height: 0,
-          overflow: "visible",
-          position: "fixed",
+          overflow: "hidden",
+          position: "absolute",
           left: 0,
           top: 0,
-          zIndex: 99999,
-          pointerEvents: "none",
         }}
       >
         <div
@@ -92,7 +94,7 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
               position: "absolute",
               inset: 0,
               pointerEvents: "none",
-              opacity: 0.025,
+              opacity: 0.022,
               backgroundImage: `url(${GRAIN_SVG})`,
               backgroundRepeat: "repeat",
               backgroundSize: "200px 200px",
@@ -101,20 +103,20 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
 
           <div style={{ position: "relative", zIndex: 1 }}>
             {/* ── Cover header ── */}
-            <div style={{ marginBottom: 36 }}>
+            <div style={{ marginBottom: 40 }}>
               <div
                 style={{
-                  fontSize: 16,
+                  fontSize: 12,
                   letterSpacing: "0.2em",
-                  color: textMuted,
+                  color: textMutedLow,
                   marginBottom: 6,
                 }}
               >
-                ◈ 镜隙之间
+                镜隙之间
               </div>
               <div
                 style={{
-                  fontSize: 28,
+                  fontSize: 24,
                   fontWeight: 600,
                   fontFamily: "'Noto Serif SC', 'Songti SC', serif",
                   letterSpacing: "0.08em",
@@ -139,7 +141,7 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
               style={{
                 height: 1,
                 backgroundColor: borderSoft,
-                marginBottom: 32,
+                marginBottom: 36,
               }}
             />
 
@@ -160,23 +162,22 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
                     display: "flex",
                     alignItems: "baseline",
                     gap: 12,
-                    marginBottom: 12,
+                    marginBottom: 18,
                   }}
                 >
                   <span
                     style={{
-                      fontSize: 16,
-                      fontWeight: 600,
+                      fontSize: 11,
                       fontFamily: "'SF Mono', 'Cascadia Code', 'Consolas', monospace",
                       color: textMutedLow,
-                      letterSpacing: "0.1em",
+                      letterSpacing: "0.08em",
                     }}
                   >
                     NO.{formatFrameNumber(frame.frameIndex)}
                   </span>
                   <span
                     style={{
-                      fontSize: 12,
+                      fontSize: 11,
                       fontFamily: "'SF Mono', 'Cascadia Code', 'Consolas', monospace",
                       color: textMutedLow,
                     }}
@@ -185,81 +186,93 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
                   </span>
                 </div>
 
-                {/* Summary with accent line */}
-                <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-                  <div
-                    style={{
-                      width: 2,
-                      flexShrink: 0,
-                      backgroundColor: accentSoft,
-                      borderRadius: 1,
-                      opacity: 0.4,
-                    }}
-                  />
-                  <p
-                    style={{
-                      fontSize: 18,
-                      lineHeight: 1.7,
-                      fontFamily: "'Noto Serif SC', 'Songti SC', serif",
-                      letterSpacing: "0.04em",
-                      margin: 0,
-                    }}
-                  >
-                    {frame.summary || "请静候时光沉淀…"}
-                  </p>
-                </div>
-
-                {/* Original content */}
+                {/* ── Main: original content ── */}
                 <div
                   style={{
-                    fontSize: 14,
-                    lineHeight: 1.7,
-                    color: textMuted,
+                    fontSize: 18,
+                    lineHeight: 1.95,
+                    color: t.textPrimary,
                     fontFamily: "'Noto Serif SC', 'Songti SC', serif",
                     letterSpacing: "0.03em",
-                    marginBottom: 14,
+                    marginBottom: 22,
                     whiteSpace: "pre-wrap",
-                    borderLeft: `1px solid ${accentSoft}`,
-                    paddingLeft: 12,
-                    opacity: 0.5,
                   }}
                 >
-                  {splitContent(frame.content, 250)}
+                  {splitContent(frame.content, 280)}
                 </div>
 
-                {/* Tags + tone */}
-                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-                  {frame.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      style={{
-                        fontSize: 11,
-                        padding: "2px 8px",
-                        border: `1px solid color-mix(in srgb, ${accentSoft} 25%, transparent)`,
-                        borderRadius: 3,
-                        color: textMuted,
-                        letterSpacing: "0.03em",
-                      }}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                  {frame.tone && (
-                    <span
+                {/* ── AI summary ── */}
+                {frame.summary && (
+                  <div style={{ marginBottom: 18 }}>
+                    <div
                       style={{
                         fontSize: 10,
-                        padding: "1px 8px",
-                        border: `1px solid color-mix(in srgb, ${t.accent} 15%, transparent)`,
-                        backgroundColor: `color-mix(in srgb, ${t.accent} 5%, transparent)`,
-                        borderRadius: 3,
-                        color: `color-mix(in srgb, ${t.accent} 50%, transparent)`,
-                        letterSpacing: "0.05em",
+                        letterSpacing: "0.1em",
+                        color: textMutedLow,
+                        marginBottom: 8,
                       }}
                     >
-                      {frame.tone}
-                    </span>
-                  )}
-                </div>
+                      显影摘要
+                    </div>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <div
+                        style={{
+                          width: 2,
+                          flexShrink: 0,
+                          backgroundColor: accentSoft,
+                          borderRadius: 1,
+                          opacity: 0.3,
+                        }}
+                      />
+                      <p
+                        style={{
+                          fontSize: 14,
+                          lineHeight: 1.7,
+                          fontFamily: "'Noto Serif SC', 'Songti SC', serif",
+                          letterSpacing: "0.04em",
+                          color: textSummary,
+                          margin: 0,
+                        }}
+                      >
+                        {frame.summary}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Tags ── */}
+                {frame.tags.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                    {frame.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        style={{
+                          fontSize: 11,
+                          padding: "3px 10px",
+                          backgroundColor: tagBg,
+                          borderRadius: 4,
+                          color: tagColor,
+                          letterSpacing: "0.03em",
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* ── Tone ── */}
+                {frame.tone && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: hexToRgba(t.accent, 0.5),
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {frame.tone}
+                  </span>
+                )}
               </div>
             ))}
 
@@ -268,8 +281,8 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
               style={{
                 height: 1,
                 backgroundColor: borderSoft,
-                marginTop: 32,
-                marginBottom: 16,
+                marginTop: 36,
+                marginBottom: 18,
               }}
             />
             <div

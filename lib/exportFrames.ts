@@ -13,7 +13,16 @@ export type ExportOptions = {
 
 function getDateStamp(): string {
   const now = new Date();
-  return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function getExportFilename(ext: string, frames: MemoryFrame[]): string {
+  if (frames.length === 1) {
+    const f = frames[0];
+    const time = f.time.replace(":", "");
+    return `jingxi-frame-${f.date}-${time}.${ext}`;
+  }
+  return `jingxi-archive-${getDateStamp()}.${ext}`;
 }
 
 function triggerDownload(filename: string, content: string, mime: string, addBOM = false) {
@@ -79,7 +88,7 @@ export function toJSON(frames: MemoryFrame[], opts: ExportOptions = { content: t
     return out;
   });
   const json = JSON.stringify(data, null, 2);
-  triggerDownload(`jingxi_archive_${getDateStamp()}.json`, json, "application/json;charset=utf-8");
+  triggerDownload(getExportFilename("json", frames), json, "application/json;charset=utf-8", true);
 }
 
 // ── Markdown export ────────────────────────────────────────────────────────
@@ -134,7 +143,7 @@ export function toMarkdown(frames: MemoryFrame[], opts: ExportOptions = { conten
     }
   }
 
-  triggerDownload(`jingxi_archive_${getDateStamp()}.md`, lines.join("\n"), "text/markdown;charset=utf-8");
+  triggerDownload(getExportFilename("md", frames), lines.join("\n"), "text/markdown;charset=utf-8", true);
 }
 
 // ── TXT export ─────────────────────────────────────────────────────────────
@@ -186,5 +195,5 @@ export function toTXT(frames: MemoryFrame[], opts: ExportOptions = { content: tr
   lines.push("");
   lines.push("═══════════════════════════════════════");
 
-  triggerDownload(`jingxi_archive_${getDateStamp()}.txt`, lines.join("\n"), "text/plain;charset=utf-8", true);
+  triggerDownload(getExportFilename("txt", frames), lines.join("\n"), "text/plain;charset=utf-8", true);
 }

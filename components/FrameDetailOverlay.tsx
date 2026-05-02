@@ -6,8 +6,7 @@ import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { toJSON, toMarkdown, toTXT } from "@/lib/exportFrames";
 import { contentHash, isAiStale } from "@/services/ai/types";
 import { useTheme } from "@/hooks/useTheme";
-import useIsMobile from "@/hooks/useIsMobile";
-import { shareOrDownload } from "@/lib/exportImage";
+import { downloadBlob, shareBlob, canShare } from "@/lib/exportImage";
 import FrameImageExport, { ImageExportHandle } from "./FrameImageExport";
 import { X, Copy, Type, Mic, ChevronDown, ChevronUp, Trash2, Edit3, Check, Plus, Download, AlertTriangle, RefreshCw, Image } from "lucide-react";
 
@@ -42,9 +41,9 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [redeveloping, setRedeveloping] = useState(false);
   const [exportingImage, setExportingImage] = useState(false);
+  const [sharingImage, setSharingImage] = useState(false);
   const exportRef = useRef<ImageExportHandle>(null);
   const { themeId } = useTheme();
-  const isMobile = useIsMobile();
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const newTagInputRef = useRef<HTMLInputElement>(null);
 
@@ -153,17 +152,32 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
     }
   };
 
-  const handleExportImage = async () => {
+  const getExportFilename = () =>
+    `jingxi-frame-${frame!.date}-${frame!.time.replace(":", "")}.png`;
+
+  const handleSaveImage = async () => {
     if (!frame || exportingImage || !exportRef.current) return;
     setExportingImage(true);
     try {
       const blob = await exportRef.current.renderToBlob();
-      const filename = `jingxi-frame-${frame.date}-${frame.time.replace(":", "")}.png`;
-      await shareOrDownload(blob, filename, isMobile);
+      downloadBlob(blob, getExportFilename());
     } catch {
       showToast("导出图片失败，请重试");
     } finally {
       setExportingImage(false);
+    }
+  };
+
+  const handleShareImage = async () => {
+    if (!frame || sharingImage || !exportRef.current) return;
+    setSharingImage(true);
+    try {
+      const blob = await exportRef.current.renderToBlob();
+      await shareBlob(blob, getExportFilename());
+    } catch {
+      showToast("分享失败，请重试");
+    } finally {
+      setSharingImage(false);
     }
   };
 
@@ -348,25 +362,17 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
               {/* AI stale indicator + re-develop button */}
               {needsRedevelop && (
                 <div className="mt-3 flex items-center gap-2 border-t border-border-soft pt-3">
-                  {frame.ai ? (
-                    <span className="flex items-center gap-1 text-micro text-accent-soft/70">
-                      <AlertTriangle size={10} />
-                      AI 摘要可能已过期
-                    </span>
-                  ) : (
-                    <span className="text-micro text-text-muted/35">尚未显影</span>
-                  )}
+                  <span className="flex items-center gap-1 text-micro text-accent-soft/70">
+                    似乎有什么东西不一样了
+                  </span>
                   <button
                     onClick={handleRedevelop}
                     disabled={redeveloping}
                     className="flex items-center gap-1 rounded border border-accent/20 px-2.5 py-1 text-micro text-accent/70 transition-colors hover:bg-accent/10 disabled:opacity-30"
                   >
                     <RefreshCw size={10} className={redeveloping ? "animate-spin" : ""} />
-                    {redeveloping ? "显影中…" : frame.ai ? "重新显影" : "显影"}
+                    {redeveloping ? "显影中…" : "重新显影"}
                   </button>
-                  {frame.ai && (
-                    <span className="text-micro text-text-muted/25">将根据当前原文重新生成摘要与标签</span>
-                  )}
                 </div>
               )}
             </div>
@@ -506,13 +512,23 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
               <span className="text-micro text-text-muted/30">导出此帧</span>
               <div className="flex gap-1">
                 <button
-                  onClick={handleExportImage}
+                  onClick={handleSaveImage}
                   disabled={exportingImage}
                   className="flex items-center gap-1 rounded border border-accent/20 bg-accent/5 px-2 py-0.5 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-40"
                 >
                   <Image size={10} />
-                  {exportingImage ? "导出中…" : "PNG"}
+                  {exportingImage ? "保存中…" : "保存 PNG"}
                 </button>
+                {canShare() && (
+                  <button
+                    onClick={handleShareImage}
+                    disabled={sharingImage}
+                    className="flex items-center gap-1 rounded border border-accent/20 bg-accent/5 px-2 py-0.5 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-40"
+                  >
+                    <Image size={10} />
+                    {sharingImage ? "分享中…" : "分享 PNG"}
+                  </button>
+                )}
                 {EXPORT_BTNS.map(({ label, fn }) => (
                   <button
                     key={label}

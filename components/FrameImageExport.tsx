@@ -4,6 +4,7 @@ import { forwardRef, useImperativeHandle, useRef } from "react";
 import { toBlob } from "html-to-image";
 import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { ThemeId, themes } from "@/lib/themes";
+import { hexToRgba, isMobileUA } from "@/lib/exportImage";
 
 export type ImageExportHandle = {
   renderToBlob: () => Promise<Blob>;
@@ -15,7 +16,7 @@ type Props = {
 };
 
 const CARD_W = 750;
-const PADDING = 40;
+const PADDING = 56;
 
 const GRAIN_SVG =
   "data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E";
@@ -35,12 +36,11 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
   useImperativeHandle(ref, () => ({
     async renderToBlob() {
       if (!containerRef.current) throw new Error("Export container not mounted");
-      // Ensure fonts are loaded and layout is painted before capture
       await document.fonts?.ready;
       await new Promise((r) => requestAnimationFrame(r));
       await new Promise((r) => requestAnimationFrame(r));
       const blob = await toBlob(containerRef.current, {
-        pixelRatio: 2,
+        pixelRatio: isMobileUA() ? 1.5 : 2,
         backgroundColor: t.bgBase,
         cacheBust: true,
       });
@@ -50,20 +50,24 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
   }));
 
   const accentSoft = t.accentSoft;
-  const textMuted = `color-mix(in srgb, ${t.textPrimary} 45%, transparent)`;
-  const textMutedLow = `color-mix(in srgb, ${t.textPrimary} 25%, transparent)`;
+  const textSecondary = hexToRgba(t.textPrimary, 0.7);
+  const textMuted = hexToRgba(t.textPrimary, 0.45);
+  const textMutedLow = hexToRgba(t.textPrimary, 0.25);
+  const textSummary = hexToRgba(t.textPrimary, 0.55);
+  const dividerColor = hexToRgba(t.textPrimary, 0.07);
+  const tagBg = hexToRgba(t.accent, 0.08);
+  const tagColor = hexToRgba(t.textPrimary, 0.6);
+  const toneColor = hexToRgba(t.accent, 0.5);
 
   return (
     <div
       style={{
         width: 0,
         height: 0,
-        overflow: "visible",
-        position: "fixed",
+        overflow: "hidden",
+        position: "absolute",
         left: 0,
         top: 0,
-        zIndex: 99999,
-        pointerEvents: "none",
       }}
     >
       <div
@@ -76,7 +80,6 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
           color: t.textPrimary,
           position: "relative",
           overflow: "hidden",
-          borderRadius: 8,
         }}
       >
         {/* Paper grain */}
@@ -85,110 +88,128 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
             position: "absolute",
             inset: 0,
             pointerEvents: "none",
-            opacity: 0.025,
+            opacity: 0.022,
             backgroundImage: `url(${GRAIN_SVG})`,
             backgroundRepeat: "repeat",
             backgroundSize: "200px 200px",
           }}
         />
 
-        {/* Content wrapper (above grain) */}
         <div style={{ position: "relative", zIndex: 1 }}>
-          {/* Brand header */}
+          {/* ── Header: brand ── */}
           <div
             style={{
               fontSize: 12,
               letterSpacing: "0.2em",
               color: textMutedLow,
-              marginBottom: 28,
+              marginBottom: 6,
             }}
           >
-            ◈ 镜隙之间
+            镜隙之间
           </div>
 
-          {/* Frame number + time */}
+          {/* ── Header: frame number + date/time ── */}
           <div
             style={{
               display: "flex",
               alignItems: "baseline",
-              gap: 16,
-              marginBottom: 4,
+              gap: 14,
+              marginBottom: 28,
             }}
           >
             <span
               style={{
-                fontSize: 28,
-                fontWeight: 600,
+                fontSize: 11,
                 fontFamily: "'SF Mono', 'Cascadia Code', 'Consolas', monospace",
-                letterSpacing: "0.1em",
-                color: textMuted,
+                color: textMutedLow,
+                letterSpacing: "0.08em",
               }}
             >
               NO.{formatFrameNumber(frame.frameIndex)}
             </span>
-          </div>
-          <div
-            style={{
-              fontSize: 13,
-              fontFamily: "'SF Mono', 'Cascadia Code', 'Consolas', monospace",
-              letterSpacing: "0.12em",
-              color: textMutedLow,
-              marginBottom: 28,
-            }}
-          >
-            {frame.date} &middot; {frame.time}
-          </div>
-
-          {/* Accent line + summary */}
-          <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
-            <div
+            <span
               style={{
-                width: 2,
-                flexShrink: 0,
-                backgroundColor: accentSoft,
-                borderRadius: 1,
-                opacity: 0.45,
-              }}
-            />
-            <p
-              style={{
-                fontSize: 22,
-                lineHeight: 1.8,
-                fontFamily: "'Noto Serif SC', 'Songti SC', serif",
-                letterSpacing: "0.04em",
-                margin: 0,
+                fontSize: 11,
+                fontFamily: "'SF Mono', 'Cascadia Code', 'Consolas', monospace",
+                color: textMutedLow,
+                letterSpacing: "0.06em",
               }}
             >
-              {frame.summary || "请静候时光沉淀…"}
-            </p>
+              {frame.date} · {frame.time}
+            </span>
           </div>
 
-          {/* Original content */}
+          {/* Divider */}
           <div
             style={{
-              fontSize: 15,
-              lineHeight: 1.75,
-              color: textMuted,
+              height: 1,
+              backgroundColor: dividerColor,
+              marginBottom: 36,
+            }}
+          />
+
+          {/* ── Main: original content ── */}
+          <div
+            style={{
+              fontSize: 21,
+              lineHeight: 2.0,
+              color: t.textPrimary,
               fontFamily: "'Noto Serif SC', 'Songti SC', serif",
               letterSpacing: "0.03em",
-              marginBottom: 24,
+              marginBottom: 40,
               whiteSpace: "pre-wrap",
-              borderLeft: `1px solid ${accentSoft}`,
-              paddingLeft: 14,
-              opacity: 0.55,
             }}
           >
-            {splitContent(frame.content, 300)}
+            {splitContent(frame.content, 400)}
           </div>
 
-          {/* Tags */}
+          {/* ── AI summary ── */}
+          {frame.summary && (
+            <div style={{ marginBottom: 28 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  letterSpacing: "0.1em",
+                  color: textMutedLow,
+                  marginBottom: 12,
+                }}
+              >
+                显影摘要
+              </div>
+              <div style={{ display: "flex", gap: 14 }}>
+                <div
+                  style={{
+                    width: 2,
+                    flexShrink: 0,
+                    backgroundColor: accentSoft,
+                    borderRadius: 1,
+                    opacity: 0.3,
+                  }}
+                />
+                <p
+                  style={{
+                    fontSize: 16,
+                    lineHeight: 1.75,
+                    fontFamily: "'Noto Serif SC', 'Songti SC', serif",
+                    letterSpacing: "0.04em",
+                    color: textSummary,
+                    margin: 0,
+                  }}
+                >
+                  {frame.summary}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Tags ── */}
           {frame.tags.length > 0 && (
             <div
               style={{
                 display: "flex",
                 flexWrap: "wrap",
                 gap: 8,
-                marginBottom: 12,
+                marginBottom: 14,
               }}
             >
               {frame.tags.map((tag) => (
@@ -196,11 +217,11 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
                   key={tag}
                   style={{
                     fontSize: 12,
-                    padding: "3px 10px",
-                    border: `1px solid color-mix(in srgb, ${accentSoft} 30%, transparent)`,
-                    borderRadius: 3,
-                    color: textMuted,
-                    letterSpacing: "0.04em",
+                    padding: "4px 12px",
+                    backgroundColor: tagBg,
+                    borderRadius: 4,
+                    color: tagColor,
+                    letterSpacing: "0.03em",
                   }}
                 >
                   {tag}
@@ -209,17 +230,13 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
             </div>
           )}
 
-          {/* Tone badge */}
+          {/* ── Tone ── */}
           {frame.tone && (
-            <div style={{ marginBottom: 32 }}>
+            <div style={{ marginBottom: 36 }}>
               <span
                 style={{
                   fontSize: 11,
-                  padding: "2px 10px",
-                  border: `1px solid color-mix(in srgb, ${t.accent} 18%, transparent)`,
-                  backgroundColor: `color-mix(in srgb, ${t.accent} 6%, transparent)`,
-                  borderRadius: 3,
-                  color: `color-mix(in srgb, ${t.accent} 55%, transparent)`,
+                  color: toneColor,
                   letterSpacing: "0.06em",
                 }}
               >
@@ -228,16 +245,14 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
             </div>
           )}
 
-          {/* Footer divider */}
+          {/* ── Footer ── */}
           <div
             style={{
               height: 1,
-              backgroundColor: `color-mix(in srgb, ${t.textPrimary} 6%, transparent)`,
-              marginBottom: 16,
+              backgroundColor: dividerColor,
+              marginBottom: 18,
             }}
           />
-
-          {/* Footer signature */}
           <div
             style={{
               display: "flex",

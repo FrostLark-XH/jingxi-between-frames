@@ -119,6 +119,8 @@ function hexToRgb(hex: string): string {
 export function applyThemeToDocument(theme: ThemeTokens): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
+  root.setAttribute("data-theme", theme.id);
+  root.style.colorScheme = theme.id === "morning-grey" ? "light" : "dark";
   root.style.setProperty("--bg-base", theme.bgBase);
   root.style.setProperty("--bg-soft", theme.bgSoft);
   root.style.setProperty("--accent", theme.accent);

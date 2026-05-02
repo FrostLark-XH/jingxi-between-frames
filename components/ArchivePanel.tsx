@@ -5,9 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Archive, X, FileJson, FileText, File as FileIcon, Check, Download, Image } from "lucide-react";
 import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { toJSON, toMarkdown, toTXT, type ExportOptions } from "@/lib/exportFrames";
-import { shareOrDownload } from "@/lib/exportImage";
+import { downloadBlob, shareBlob, canShare } from "@/lib/exportImage";
 import { useTheme } from "@/hooks/useTheme";
-import useIsMobile from "@/hooks/useIsMobile";
 import FrameImageExport, { ImageExportHandle } from "./FrameImageExport";
 import FrameCollectionImageExport, { CollectionExportHandle } from "./FrameCollectionImageExport";
 
@@ -43,14 +42,18 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [exportOpts, setExportOpts] = useState<ExportOptions>({ content: true, tags: true, summary: true });
   const [exportingImage, setExportingImage] = useState(false);
+  const [sharingImage, setSharingImage] = useState(false);
   const [exportingCollection, setExportingCollection] = useState(false);
+  const [sharingCollection, setSharingCollection] = useState(false);
   const [exportingAllImage, setExportingAllImage] = useState(false);
+  const [sharingAllImage, setSharingAllImage] = useState(false);
+  const [confirmingFormat, setConfirmingFormat] = useState<string | null>(null);
+  const [overviewConfirming, setOverviewConfirming] = useState<string | null>(null);
   const exportRef = useRef<ImageExportHandle>(null);
   const collectionRef = useRef<CollectionExportHandle>(null);
   const overviewSingleRef = useRef<ImageExportHandle>(null);
   const overviewCollectionRef = useRef<CollectionExportHandle>(null);
   const { themeId } = useTheme();
-  const isMobile = useIsMobile();
 
   const MAX_COLLECTION_FRAMES = 8;
 
@@ -102,44 +105,84 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
   const singleFrame = selectedIds.size === 1 ? frames.find((f) => selectedIds.has(f.id)) ?? null : null;
   const collectionFrames = selectedFrames;
 
-  const handleExportImage = async () => {
+  const handleFormatClick = (label: string, fn: (fs: MemoryFrame[], opts: ExportOptions) => void, fs: MemoryFrame[]) => {
+    if (confirmingFormat === label) {
+      fn(fs, exportOpts);
+      setConfirmingFormat(null);
+    } else {
+      setConfirmingFormat(label);
+    }
+  };
+
+  const handleOverviewFormatClick = (label: string, fn: (fs: MemoryFrame[], opts: ExportOptions) => void) => {
+    if (overviewConfirming === label) {
+      fn(frames, exportOpts);
+      setOverviewConfirming(null);
+    } else {
+      setOverviewConfirming(label);
+    }
+  };
+
+  const getSingleFilename = (f: MemoryFrame) =>
+    `jingxi-frame-${f.date}-${f.time.replace(":", "")}.png`;
+
+  const handleSaveImage = async () => {
     if (!singleFrame || exportingImage || !exportRef.current) return;
     setExportingImage(true);
     try {
       const blob = await exportRef.current.renderToBlob();
-      const filename = `jingxi-frame-${singleFrame.date}-${singleFrame.time.replace(":", "")}.png`;
-      await shareOrDownload(blob, filename, isMobile);
+      downloadBlob(blob, getSingleFilename(singleFrame));
     } catch {
-      // error silently — toast handled upstream if needed
     } finally {
       setExportingImage(false);
     }
   };
 
-  const handleExportCollection = async () => {
+  const handleShareImage = async () => {
+    if (!singleFrame || sharingImage || !exportRef.current) return;
+    setSharingImage(true);
+    try {
+      const blob = await exportRef.current.renderToBlob();
+      await shareBlob(blob, getSingleFilename(singleFrame));
+    } catch {
+    } finally {
+      setSharingImage(false);
+    }
+  };
+
+  const handleSaveCollection = async () => {
     if (collectionFrames.length === 0 || exportingCollection || !collectionRef.current) return;
     if (collectionFrames.length > MAX_COLLECTION_FRAMES) return;
     setExportingCollection(true);
     try {
       const blob = await collectionRef.current.renderToBlob();
-      const filename = `jingxi-archive-${collectionFrames[0].date}.png`;
-      await shareOrDownload(blob, filename, isMobile);
+      downloadBlob(blob, `jingxi-archive-${collectionFrames[0].date}.png`);
     } catch {
-      // error silently
     } finally {
       setExportingCollection(false);
     }
   };
 
-  const handleExportAllImage = async () => {
+  const handleShareCollection = async () => {
+    if (collectionFrames.length === 0 || sharingCollection || !collectionRef.current) return;
+    if (collectionFrames.length > MAX_COLLECTION_FRAMES) return;
+    setSharingCollection(true);
+    try {
+      const blob = await collectionRef.current.renderToBlob();
+      await shareBlob(blob, `jingxi-archive-${collectionFrames[0].date}.png`);
+    } catch {
+    } finally {
+      setSharingCollection(false);
+    }
+  };
+
+  const handleSaveAllImage = async () => {
     if (frames.length === 0 || exportingAllImage) return;
     if (frames.length === 1 && overviewSingleRef.current) {
       setExportingAllImage(true);
       try {
         const blob = await overviewSingleRef.current.renderToBlob();
-        const f = frames[0];
-        const filename = `jingxi-frame-${f.date}-${f.time.replace(":", "")}.png`;
-        await shareOrDownload(blob, filename, isMobile);
+        downloadBlob(blob, getSingleFilename(frames[0]));
       } catch {
       } finally {
         setExportingAllImage(false);
@@ -148,11 +191,33 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
       setExportingAllImage(true);
       try {
         const blob = await overviewCollectionRef.current.renderToBlob();
-        const filename = `jingxi-archive-${frames[0].date}.png`;
-        await shareOrDownload(blob, filename, isMobile);
+        downloadBlob(blob, `jingxi-archive-${frames[0].date}.png`);
       } catch {
       } finally {
         setExportingAllImage(false);
+      }
+    }
+  };
+
+  const handleShareAllImage = async () => {
+    if (frames.length === 0 || sharingAllImage) return;
+    if (frames.length === 1 && overviewSingleRef.current) {
+      setSharingAllImage(true);
+      try {
+        const blob = await overviewSingleRef.current.renderToBlob();
+        await shareBlob(blob, getSingleFilename(frames[0]));
+      } catch {
+      } finally {
+        setSharingAllImage(false);
+      }
+    } else if (frames.length <= MAX_COLLECTION_FRAMES && overviewCollectionRef.current) {
+      setSharingAllImage(true);
+      try {
+        const blob = await overviewCollectionRef.current.renderToBlob();
+        await shareBlob(blob, `jingxi-archive-${frames[0].date}.png`);
+      } catch {
+      } finally {
+        setSharingAllImage(false);
       }
     }
   };
@@ -262,26 +327,39 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                           </button>
                         ))}
                       </div>
-                      <div className="flex gap-1.5 px-4">
+                      <div className="flex gap-1 px-4">
                         {EXPORT_BTNS.map(({ label, icon, fn }) => (
                           <button
                             key={label}
-                            onClick={() => fn(frames, exportOpts)}
-                            className="flex items-center gap-1 rounded border border-border-soft bg-bg-base px-2.5 py-1 text-micro text-text-muted transition-colors hover:border-accent/20 hover:text-text-secondary"
+                            onClick={() => handleOverviewFormatClick(label, fn)}
+                            className={`flex items-center gap-1 rounded border px-1.5 py-0.5 text-micro transition-colors ${
+                              overviewConfirming === label
+                                ? "border-accent/40 bg-accent/15 text-accent"
+                                : "border-border-soft bg-bg-base text-text-muted hover:border-accent/20 hover:text-text-secondary"
+                            }`}
                           >
-                            {icon}
-                            {label}
+                            {overviewConfirming === label ? `导出为 ${label}？` : label}
                           </button>
                         ))}
                         <button
-                          onClick={handleExportAllImage}
+                          onClick={handleSaveAllImage}
                           disabled={exportingAllImage || frames.length === 0 || frames.length > MAX_COLLECTION_FRAMES}
                           title={frames.length > MAX_COLLECTION_FRAMES ? `长图导出最多支持 ${MAX_COLLECTION_FRAMES} 帧` : undefined}
-                          className="flex items-center gap-1 rounded border border-accent/20 bg-accent/5 px-2.5 py-1 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-30"
+                          className="flex items-center gap-1 rounded border border-accent/20 bg-accent/5 px-1.5 py-0.5 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-30"
                         >
                           <Image size={10} />
-                          {exportingAllImage ? "导出中…" : frames.length > MAX_COLLECTION_FRAMES ? `≤${MAX_COLLECTION_FRAMES}帧` : "PNG"}
+                          {exportingAllImage ? "保存中…" : frames.length > MAX_COLLECTION_FRAMES ? `≤${MAX_COLLECTION_FRAMES}帧` : "保存 PNG"}
                         </button>
+                        {canShare() && !(frames.length > MAX_COLLECTION_FRAMES) && (
+                          <button
+                            onClick={handleShareAllImage}
+                            disabled={sharingAllImage || frames.length === 0}
+                            className="flex items-center gap-1 rounded border border-accent/20 bg-accent/5 px-1.5 py-0.5 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-30"
+                          >
+                            <Image size={10} />
+                            {sharingAllImage ? "分享中…" : "分享 PNG"}
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -369,36 +447,63 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                   <span className="flex-1 text-xs text-text-muted/60">
                     导出已选 {selectedFrames.length} 帧
                   </span>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1">
                     {EXPORT_BTNS.map(({ label, icon, fn }) => (
                       <button
                         key={label}
-                        onClick={() => fn(selectedFrames, exportOpts)}
-                        className="flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-2.5 py-1 text-micro transition-colors hover:bg-accent/20 text-accent"
+                        onClick={() => handleFormatClick(label, fn, selectedFrames)}
+                        className={`flex items-center gap-1 rounded border px-1.5 py-0.5 text-micro transition-colors ${
+                          confirmingFormat === label
+                            ? "border-accent/40 bg-accent/15 text-accent"
+                            : "border-accent/30 bg-accent/10 text-accent hover:bg-accent/20"
+                        }`}
                       >
-                        {icon}
-                        {label}
+                        {confirmingFormat === label ? `导出为 ${label}？` : label}
                       </button>
                     ))}
                     {selectedFrames.length === 1 && (
-                      <button
-                        onClick={handleExportImage}
-                        disabled={exportingImage}
-                        className="flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-2.5 py-1 text-micro transition-colors hover:bg-accent/20 text-accent disabled:opacity-40"
-                      >
-                        <Image size={10} />
-                        {exportingImage ? "导出中…" : "PNG"}
-                      </button>
+                      <>
+                        <button
+                          onClick={handleSaveImage}
+                          disabled={exportingImage}
+                          className="flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-1.5 py-0.5 text-micro transition-colors hover:bg-accent/20 text-accent disabled:opacity-40"
+                        >
+                          <Image size={10} />
+                          {exportingImage ? "保存中…" : "保存 PNG"}
+                        </button>
+                        {canShare() && (
+                          <button
+                            onClick={handleShareImage}
+                            disabled={sharingImage}
+                            className="flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-1.5 py-0.5 text-micro transition-colors hover:bg-accent/20 text-accent disabled:opacity-40"
+                          >
+                            <Image size={10} />
+                            {sharingImage ? "分享中…" : "分享 PNG"}
+                          </button>
+                        )}
+                      </>
                     )}
                     {selectedFrames.length >= 2 && selectedFrames.length <= MAX_COLLECTION_FRAMES && (
-                      <button
-                        onClick={handleExportCollection}
-                        disabled={exportingCollection}
-                        className="flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-2.5 py-1 text-micro transition-colors hover:bg-accent/20 text-accent disabled:opacity-40"
-                      >
-                        <Image size={10} />
-                        {exportingCollection ? "导出中…" : `长图(${selectedFrames.length})`}
-                      </button>
+                      <>
+                        <button
+                          onClick={handleSaveCollection}
+                          disabled={exportingCollection}
+                          className="flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-1.5 py-0.5 text-micro transition-colors hover:bg-accent/20 text-accent disabled:opacity-40"
+                        >
+                          <Image size={10} />
+                          {exportingCollection ? "保存中…" : `长图(${selectedFrames.length})`}
+                        </button>
+                        {canShare() && (
+                          <button
+                            onClick={handleShareCollection}
+                            disabled={sharingCollection}
+                            className="flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-1.5 py-0.5 text-micro transition-colors hover:bg-accent/20 text-accent disabled:opacity-40"
+                          >
+                            <Image size={10} />
+                            {sharingCollection ? "分享中…" : `分享(${selectedFrames.length})`}
+                          </button>
+                        )}
+                      </>
                     )}
                     {selectedFrames.length > MAX_COLLECTION_FRAMES && (
                       <span
