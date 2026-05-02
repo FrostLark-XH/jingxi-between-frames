@@ -1,6 +1,8 @@
 // POST /api/ai/develop-frame
 // Real AI → mock fallback. Never exposes API key to client.
 
+export const runtime = "edge";
+
 import { NextRequest, NextResponse } from "next/server";
 import { contentHash } from "@/services/ai/types";
 import { getDevelopFrameResult } from "@/services/ai/index";

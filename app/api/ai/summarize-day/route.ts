@@ -1,6 +1,8 @@
 // POST /api/ai/summarize-day
 // Real AI → mock fallback. Returns daily mainline, keywords, review hint.
 
+export const runtime = "edge";
+
 import { NextRequest, NextResponse } from "next/server";
 import { getDaySummaryResult } from "@/services/ai";
 
