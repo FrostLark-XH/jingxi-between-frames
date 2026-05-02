@@ -6,6 +6,8 @@ import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { toJSON, toMarkdown, toTXT } from "@/lib/exportFrames";
 import { contentHash, isAiStale } from "@/services/ai/types";
 import { useTheme } from "@/hooks/useTheme";
+import useIsMobile from "@/hooks/useIsMobile";
+import { shareOrDownload } from "@/lib/exportImage";
 import FrameImageExport, { ImageExportHandle } from "./FrameImageExport";
 import { X, Copy, Type, Mic, ChevronDown, ChevronUp, Trash2, Edit3, Check, Plus, Download, AlertTriangle, RefreshCw, Image } from "lucide-react";
 
@@ -42,6 +44,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
   const [exportingImage, setExportingImage] = useState(false);
   const exportRef = useRef<ImageExportHandle>(null);
   const { themeId } = useTheme();
+  const isMobile = useIsMobile();
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const newTagInputRef = useRef<HTMLInputElement>(null);
 
@@ -155,23 +158,9 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
     setExportingImage(true);
     try {
       const blob = await exportRef.current.renderToBlob();
-      const filename = `jingxi_frame_NO.${formatFrameNumber(frame.frameIndex)}.png`;
-      const file = new File([blob], filename, { type: "image/png" });
-
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file] });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return; // user cancelled share
+      const filename = `jingxi-frame-${frame.date}-${frame.time.replace(":", "")}.png`;
+      await shareOrDownload(blob, filename, isMobile);
+    } catch {
       showToast("导出图片失败，请重试");
     } finally {
       setExportingImage(false);

@@ -5,8 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Archive, X, FileJson, FileText, File as FileIcon, Check, Download, Image } from "lucide-react";
 import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { toJSON, toMarkdown, toTXT, type ExportOptions } from "@/lib/exportFrames";
+import { shareOrDownload } from "@/lib/exportImage";
 import { useTheme } from "@/hooks/useTheme";
+import useIsMobile from "@/hooks/useIsMobile";
 import FrameImageExport, { ImageExportHandle } from "./FrameImageExport";
+import FrameCollectionImageExport, { CollectionExportHandle } from "./FrameCollectionImageExport";
 
 type Props = {
   frames: MemoryFrame[];
@@ -40,8 +43,16 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [exportOpts, setExportOpts] = useState<ExportOptions>({ content: true, tags: true, summary: true });
   const [exportingImage, setExportingImage] = useState(false);
+  const [exportingCollection, setExportingCollection] = useState(false);
+  const [exportingAllImage, setExportingAllImage] = useState(false);
   const exportRef = useRef<ImageExportHandle>(null);
+  const collectionRef = useRef<CollectionExportHandle>(null);
+  const overviewSingleRef = useRef<ImageExportHandle>(null);
+  const overviewCollectionRef = useRef<CollectionExportHandle>(null);
   const { themeId } = useTheme();
+  const isMobile = useIsMobile();
+
+  const MAX_COLLECTION_FRAMES = 8;
 
   const toggleOption = (key: keyof ExportOptions) => {
     setExportOpts((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -89,31 +100,60 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
   };
 
   const singleFrame = selectedIds.size === 1 ? frames.find((f) => selectedIds.has(f.id)) ?? null : null;
+  const collectionFrames = selectedFrames;
 
   const handleExportImage = async () => {
     if (!singleFrame || exportingImage || !exportRef.current) return;
     setExportingImage(true);
     try {
       const blob = await exportRef.current.renderToBlob();
-      const filename = `jingxi_frame_NO.${formatFrameNumber(singleFrame.frameIndex)}.png`;
-      const file = new File([blob], filename, { type: "image/png" });
-
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file] });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
+      const filename = `jingxi-frame-${singleFrame.date}-${singleFrame.time.replace(":", "")}.png`;
+      await shareOrDownload(blob, filename, isMobile);
+    } catch {
+      // error silently — toast handled upstream if needed
     } finally {
       setExportingImage(false);
+    }
+  };
+
+  const handleExportCollection = async () => {
+    if (collectionFrames.length === 0 || exportingCollection || !collectionRef.current) return;
+    if (collectionFrames.length > MAX_COLLECTION_FRAMES) return;
+    setExportingCollection(true);
+    try {
+      const blob = await collectionRef.current.renderToBlob();
+      const filename = `jingxi-archive-${collectionFrames[0].date}.png`;
+      await shareOrDownload(blob, filename, isMobile);
+    } catch {
+      // error silently
+    } finally {
+      setExportingCollection(false);
+    }
+  };
+
+  const handleExportAllImage = async () => {
+    if (frames.length === 0 || exportingAllImage) return;
+    if (frames.length === 1 && overviewSingleRef.current) {
+      setExportingAllImage(true);
+      try {
+        const blob = await overviewSingleRef.current.renderToBlob();
+        const f = frames[0];
+        const filename = `jingxi-frame-${f.date}-${f.time.replace(":", "")}.png`;
+        await shareOrDownload(blob, filename, isMobile);
+      } catch {
+      } finally {
+        setExportingAllImage(false);
+      }
+    } else if (frames.length <= MAX_COLLECTION_FRAMES && overviewCollectionRef.current) {
+      setExportingAllImage(true);
+      try {
+        const blob = await overviewCollectionRef.current.renderToBlob();
+        const filename = `jingxi-archive-${frames[0].date}.png`;
+        await shareOrDownload(blob, filename, isMobile);
+      } catch {
+      } finally {
+        setExportingAllImage(false);
+      }
     }
   };
 
@@ -234,12 +274,13 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                           </button>
                         ))}
                         <button
-                          onClick={handleExportImage}
-                          disabled={exportingImage || frames.length === 0}
+                          onClick={handleExportAllImage}
+                          disabled={exportingAllImage || frames.length === 0 || frames.length > MAX_COLLECTION_FRAMES}
+                          title={frames.length > MAX_COLLECTION_FRAMES ? `长图导出最多支持 ${MAX_COLLECTION_FRAMES} 帧` : undefined}
                           className="flex items-center gap-1 rounded border border-accent/20 bg-accent/5 px-2.5 py-1 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-30"
                         >
                           <Image size={10} />
-                          {exportingImage ? "导出中…" : "PNG"}
+                          {exportingAllImage ? "导出中…" : frames.length > MAX_COLLECTION_FRAMES ? `≤${MAX_COLLECTION_FRAMES}帧` : "PNG"}
                         </button>
                       </div>
                     </div>
@@ -339,7 +380,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                         {label}
                       </button>
                     ))}
-                    {singleFrame && (
+                    {selectedFrames.length === 1 && (
                       <button
                         onClick={handleExportImage}
                         disabled={exportingImage}
@@ -349,13 +390,42 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                         {exportingImage ? "导出中…" : "PNG"}
                       </button>
                     )}
+                    {selectedFrames.length >= 2 && selectedFrames.length <= MAX_COLLECTION_FRAMES && (
+                      <button
+                        onClick={handleExportCollection}
+                        disabled={exportingCollection}
+                        className="flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-2.5 py-1 text-micro transition-colors hover:bg-accent/20 text-accent disabled:opacity-40"
+                      >
+                        <Image size={10} />
+                        {exportingCollection ? "导出中…" : `长图(${selectedFrames.length})`}
+                      </button>
+                    )}
+                    {selectedFrames.length > MAX_COLLECTION_FRAMES && (
+                      <span
+                        className="text-micro text-text-muted/40 px-1"
+                        title={`长图导出最多支持 ${MAX_COLLECTION_FRAMES} 帧`}
+                      >
+                        长图≤{MAX_COLLECTION_FRAMES}帧
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* Hidden image export card */}
+              {/* Hidden export cards — selection-based */}
               {singleFrame && (
                 <FrameImageExport ref={exportRef} frame={singleFrame} themeId={themeId} />
+              )}
+              {selectedFrames.length >= 2 && selectedFrames.length <= MAX_COLLECTION_FRAMES && (
+                <FrameCollectionImageExport ref={collectionRef} frames={collectionFrames} themeId={themeId} />
+              )}
+
+              {/* Hidden export cards — overview (all frames) */}
+              {frames.length === 1 && (
+                <FrameImageExport ref={overviewSingleRef} frame={frames[0]} themeId={themeId} />
+              )}
+              {frames.length >= 2 && frames.length <= MAX_COLLECTION_FRAMES && (
+                <FrameCollectionImageExport ref={overviewCollectionRef} frames={frames} themeId={themeId} />
               )}
             </motion.aside>
           </>
