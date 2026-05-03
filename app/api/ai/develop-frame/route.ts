@@ -6,9 +6,21 @@ export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import { contentHash } from "@/services/ai/types";
 import { getDevelopFrameResult } from "@/services/ai/index";
+import { checkRateLimit, checkContentLength } from "@/lib/rateLimit";
+
+const MAX_CONTENT_LENGTH = 3000;
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit
+    const rl = checkRateLimit("develop-frame");
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "暗房暂时忙碌，请稍后再试。", retryAfter: rl.retryAfter },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const content = typeof body.content === "string" ? body.content.trim() : "";
     const createdAt =
@@ -16,6 +28,12 @@ export async function POST(req: NextRequest) {
 
     if (!content) {
       return NextResponse.json({ error: "content is required" }, { status: 400 });
+    }
+
+    // Content length limit
+    const lengthError = checkContentLength(content, MAX_CONTENT_LENGTH);
+    if (lengthError) {
+      return NextResponse.json({ error: lengthError }, { status: 400 });
     }
 
     const result = await getDevelopFrameResult(content, createdAt);

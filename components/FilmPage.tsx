@@ -31,6 +31,7 @@ type Props = {
   onRestore: (id: string) => void;
   onPermanentlyDelete: (id: string) => void;
   onBack: () => void;
+  onOpenDataManager: () => void;
   onArchiveOpenChange?: (open: boolean) => void;
   showToast: (message: string) => void;
 };
@@ -50,6 +51,7 @@ export default memo(function FilmPage({
   onRestore,
   onPermanentlyDelete,
   onBack,
+  onOpenDataManager,
   onArchiveOpenChange,
   showToast,
 }: Props) {
@@ -87,6 +89,12 @@ export default memo(function FilmPage({
           <span>返回记录室</span>
         </button>
         <div className="flex items-center gap-4 pr-4 sm:pr-12">
+          <button
+            onClick={onOpenDataManager}
+            className="text-xs tracking-wider text-text-muted/40 transition-colors hover:text-text-muted/70"
+          >
+            数据管理
+          </button>
           {deletedFrames.length > 0 && (
             <RecycleBin
               deletedFrames={deletedFrames}

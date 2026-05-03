@@ -8,6 +8,7 @@ import { contentHash, isAiStale } from "@/services/ai/types";
 import { useTheme } from "@/hooks/useTheme";
 import { downloadBlob, shareBlob, canShare } from "@/lib/exportImage";
 import FrameImageExport, { ImageExportHandle } from "./FrameImageExport";
+import { track } from "@/lib/analytics";
 import { X, Copy, Type, Mic, ChevronDown, ChevronUp, Trash2, Edit3, Check, Plus, Download, AlertTriangle, RefreshCw, Image } from "lucide-react";
 
 type Props = {
@@ -161,6 +162,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
     try {
       const blob = await exportRef.current.renderToBlob();
       downloadBlob(blob, getExportFilename());
+      track("png_exported");
     } catch {
       showToast("导出图片失败，请重试");
     } finally {

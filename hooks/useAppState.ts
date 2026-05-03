@@ -106,6 +106,8 @@ type Action =
   | { type: "DELETE_FRAME"; id: string }
   | { type: "RESTORE_FRAME"; id: string }
   | { type: "PERMANENTLY_DELETE_FRAME"; id: string }
+  | { type: "IMPORT_FRAMES"; frames: MemoryFrame[] }
+  | { type: "CLEAR_ALL_FRAMES" }
   | { type: "SELECT_FRAME"; frame: MemoryFrame | null }
   | { type: "SHOW_TOAST"; message: string }
   | { type: "HIDE_TOAST" };
@@ -170,6 +172,24 @@ function reducer(state: AppState, action: Action): AppState {
       saveFrames(nextFrames);
       return { ...state, frames: nextFrames };
     }
+    case "IMPORT_FRAMES": {
+      // Validate, migrate, and deduplicate by id
+      const incoming = action.frames
+        .map((f) => migrateFrame(f as Record<string, unknown>))
+        .filter((f): f is MemoryFrame => f !== null);
+      const idMap = new Map<string, MemoryFrame>();
+      for (const f of incoming) idMap.set(f.id, f);
+      const nextFrames = [
+        ...idMap.values(),
+        ...state.frames.filter((f) => !idMap.has(f.id)),
+      ];
+      saveFrames(nextFrames);
+      return { ...state, frames: nextFrames };
+    }
+    case "CLEAR_ALL_FRAMES": {
+      saveFrames([]);
+      return { ...state, frames: [] };
+    }
     case "SELECT_FRAME":
       return { ...state, selectedFrame: action.frame };
     case "SHOW_TOAST":
@@ -227,6 +247,16 @@ export default function useAppState() {
     []
   );
 
+  const importFrames = useCallback(
+    (frames: MemoryFrame[]) => dispatch({ type: "IMPORT_FRAMES", frames }),
+    []
+  );
+
+  const clearAllFrames = useCallback(
+    () => dispatch({ type: "CLEAR_ALL_FRAMES" }),
+    []
+  );
+
   const selectFrame = useCallback(
     (frame: MemoryFrame | null) => dispatch({ type: "SELECT_FRAME", frame }),
     []
@@ -274,5 +304,7 @@ export default function useAppState() {
     todayFrameCount,
     nextFrameIndex,
     deletedFrames,
+    importFrames,
+    clearAllFrames,
   };
 }

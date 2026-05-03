@@ -7,6 +7,7 @@ import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { toJSON, toMarkdown, toTXT, type ExportOptions } from "@/lib/exportFrames";
 import { downloadBlob, shareBlob, canShare } from "@/lib/exportImage";
 import { useTheme } from "@/hooks/useTheme";
+import { track } from "@/lib/analytics";
 import FrameImageExport, { ImageExportHandle } from "./FrameImageExport";
 import FrameCollectionImageExport, { CollectionExportHandle } from "./FrameCollectionImageExport";
 
@@ -132,6 +133,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
     try {
       const blob = await exportRef.current.renderToBlob();
       downloadBlob(blob, getSingleFilename(singleFrame));
+      track("png_exported");
     } catch {
     } finally {
       setExportingImage(false);
@@ -157,6 +159,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
     try {
       const blob = await collectionRef.current.renderToBlob();
       downloadBlob(blob, `jingxi-archive-${collectionFrames[0].date}.png`);
+      track("png_exported");
     } catch {
     } finally {
       setExportingCollection(false);
@@ -183,6 +186,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
       try {
         const blob = await overviewSingleRef.current.renderToBlob();
         downloadBlob(blob, getSingleFilename(frames[0]));
+        track("png_exported");
       } catch {
       } finally {
         setExportingAllImage(false);
@@ -192,6 +196,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
       try {
         const blob = await overviewCollectionRef.current.renderToBlob();
         downloadBlob(blob, `jingxi-archive-${frames[0].date}.png`);
+        track("png_exported");
       } catch {
       } finally {
         setExportingAllImage(false);

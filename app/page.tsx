@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import useAppState from "@/hooks/useAppState";
 import AppShell from "@/components/AppShell";
 import ShaderBackground from "@/components/ShaderBackground";
 import RecordingRoom from "@/components/RecordingRoom";
 import FilmPage from "@/components/FilmPage";
 import StatusToast from "@/components/StatusToast";
+import DataManager from "@/components/DataManager";
+import { track } from "@/lib/analytics";
 
 type View = "recording-room" | "film";
 
@@ -37,14 +39,29 @@ export default function HomePage() {
     todayFrameCount,
     nextFrameIndex,
     deletedFrames,
+    importFrames,
+    clearAllFrames,
   } = useAppState();
 
   const [draftText, setDraftText] = useState(loadDraft);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [dataManagerOpen, setDataManagerOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trackedAppOpen = useRef(false);
+
+  const totalFrameCount = state.frames.filter((f) => !f.deletedAt).length;
+  const activeFrames = state.frames.filter((f) => !f.deletedAt);
+
+  // app_open — once per mount
+  useEffect(() => {
+    if (!trackedAppOpen.current) {
+      trackedAppOpen.current = true;
+      track("app_open");
+    }
+  }, []);
 
   const saveDraft = useCallback((text: string) => {
-    setDraftText(text); // immediate — keep textarea responsive
+    setDraftText(text);
     if (typeof window === "undefined") return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -65,18 +82,30 @@ export default function HomePage() {
   }, []);
 
   const handleSave = (frame: Parameters<typeof addFrame>[0]) => {
+    const wasFirstFrame = totalFrameCount === 0;
     addFrame(frame);
     clearDraft();
     showToast("已保存为一帧记忆。");
+    if (wasFirstFrame) {
+      track("first_frame_created");
+    }
   };
 
-  const totalFrameCount = state.frames.filter((f) => !f.deletedAt).length;
-  const activeFrames = state.frames.filter((f) => !f.deletedAt);
+  const handleViewFilm = () => {
+    setView("film");
+    track("film_opened");
+  };
+
+  const handleBackToRecording = () => {
+    setView("recording-room");
+  };
+
+  const totalAllFrames = state.frames.length;
 
   return (
     <>
       <ShaderBackground />
-      <AppShell hideThemeSwitcher={archiveOpen}>
+      <AppShell hideThemeSwitcher={archiveOpen || dataManagerOpen}>
         {view === "recording-room" ? (
           <RecordingRoom
             draftText={draftText}
@@ -84,7 +113,8 @@ export default function HomePage() {
             onDraftClear={clearDraft}
             onSave={handleSave}
             onUpdateFrame={updateFrame}
-            onViewFilm={() => setView("film")}
+            onViewFilm={handleViewFilm}
+            onOpenDataManager={() => setDataManagerOpen(true)}
             todayFrameCount={todayFrameCount}
             nextFrameIndex={nextFrameIndex}
             showToast={showToast}
@@ -104,11 +134,22 @@ export default function HomePage() {
             onUpdate={updateFrame}
             onRestore={restoreFrame}
             onPermanentlyDelete={permanentlyDeleteFrame}
-            onBack={() => setView("recording-room")}
+            onBack={handleBackToRecording}
+            onOpenDataManager={() => setDataManagerOpen(true)}
             onArchiveOpenChange={setArchiveOpen}
             showToast={showToast}
           />
         )}
+
+        <DataManager
+          open={dataManagerOpen}
+          onClose={() => setDataManagerOpen(false)}
+          frameCount={totalFrameCount}
+          allFrames={state.frames}
+          onImport={importFrames}
+          onClearAll={clearAllFrames}
+          showToast={showToast}
+        />
 
         <StatusToast message={state.toast} />
       </AppShell>

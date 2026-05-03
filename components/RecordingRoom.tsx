@@ -7,6 +7,7 @@ import { MemoryFrame } from "@/data/demoFrames";
 import { contentHash } from "@/services/ai/types";
 import { getAiProvider } from "@/services/ai";
 import { formatText } from "@/lib/textFormat";
+import { track } from "@/lib/analytics";
 import useIsMobile from "@/hooks/useIsMobile";
 import MemoryInput from "./MemoryInput";
 import ActionBar from "./ActionBar";
@@ -18,12 +19,13 @@ type Props = {
   onSave: (frame: MemoryFrame) => void;
   onUpdateFrame: (id: string, changes: Partial<Pick<MemoryFrame, "summary" | "tags" | "tone" | "ai">>) => void;
   onViewFilm: () => void;
+  onOpenDataManager: () => void;
   todayFrameCount: number;
   nextFrameIndex: number;
   showToast: (message: string) => void;
 };
 
-export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, onSave, onUpdateFrame, onViewFilm, todayFrameCount, nextFrameIndex, showToast }: Props) {
+export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, onSave, onUpdateFrame, onViewFilm, onOpenDataManager, todayFrameCount, nextFrameIndex, showToast }: Props) {
   const [isDeveloping, setIsDeveloping] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -102,6 +104,7 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
           body: JSON.stringify({ content: formatted, createdAt: iso }),
         });
         if (res.ok) {
+          track("frame_developed");
           const data = await res.json();
           onUpdateFrame(frameId, {
             summary: data.summary || "",
@@ -198,6 +201,18 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
           </span>
         )}
         <ChevronRight size={11} />
+      </motion.button>
+
+      {/* Data management entry */}
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.45 }}
+        onClick={onOpenDataManager}
+        className="mb-4 flex items-center justify-center text-xs tracking-wider transition-colors duration-300 hover:text-text-muted/60"
+        style={{ color: "color-mix(in srgb, var(--text-primary) 14%, transparent)" }}
+      >
+        数据管理
       </motion.button>
 
       {/* Action bar — desktop only, mobile uses sticky bar */}
