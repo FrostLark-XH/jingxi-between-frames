@@ -32,6 +32,33 @@ const EXPORT_BTNS = [
   { label: "TXT", fn: (frames: MemoryFrame[]) => toTXT(frames, { content: true, tags: true, summary: true }) },
 ];
 
+type ReadingFontSize = "small" | "normal" | "large";
+
+const READING_FONT_SIZES: Record<ReadingFontSize, string> = {
+  small: "16px",
+  normal: "18px",
+  large: "21px",
+};
+
+const FONT_SIZE_LABELS: Record<ReadingFontSize, string> = {
+  small: "小",
+  normal: "标准",
+  large: "大",
+};
+
+const FONT_SIZE_STORAGE_KEY = "jingxi_reading_font_size";
+
+const FONT_SIZE_OPTIONS: ReadingFontSize[] = ["small", "normal", "large"];
+
+function loadReadingFontSize(): ReadingFontSize {
+  if (typeof window === "undefined") return "normal";
+  try {
+    const raw = localStorage.getItem(FONT_SIZE_STORAGE_KEY);
+    if (raw === "small" || raw === "normal" || raw === "large") return raw;
+  } catch { /* ignore */ }
+  return "normal";
+}
+
 export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate, showToast }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
@@ -47,6 +74,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
   const exportRef = useRef<ImageExportHandle>(null);
   const { themeId } = useTheme();
   const [exportThemeId, setExportThemeId] = useState<ThemeId>(themeId);
+  const [readingFontSize, setReadingFontSize] = useState<ReadingFontSize>(loadReadingFontSize);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const newTagInputRef = useRef<HTMLInputElement>(null);
 
@@ -210,6 +238,11 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
     fn([frame]);
   };
 
+  const handleSetReadingFontSize = (size: ReadingFontSize) => {
+    setReadingFontSize(size);
+    try { localStorage.setItem(FONT_SIZE_STORAGE_KEY, size); } catch {}
+  };
+
   const handleRequestClose = useCallback(() => {
     if (hasUnsavedChanges) {
       setShowUnsavedWarning(true);
@@ -255,7 +288,13 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
           onClick={handleRequestClose}
-          className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto px-5 py-20 bg-surface-overlay"
+          className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-surface-overlay"
+          style={{
+            paddingTop: "max(12px, env(safe-area-inset-top, 0px))",
+            paddingBottom: "max(12px, env(safe-area-inset-bottom, 0px))",
+            paddingLeft: 12,
+            paddingRight: 12,
+          }}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.97, y: 16 }}
@@ -263,7 +302,11 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
             exit={{ opacity: 0, scale: 0.97, y: 16 }}
             transition={{ type: "spring", stiffness: 350, damping: 28 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-app border border-border-subtle p-6 paper-grain rounded-card border-l border-l-border-warm bg-bg-base"
+            className="relative w-full max-w-app border border-border-subtle p-6 paper-grain rounded-card border-l border-l-border-warm bg-bg-base overflow-x-hidden"
+            style={{
+              maxHeight: "calc(100dvh - env(safe-area-inset-top, 12px) - env(safe-area-inset-bottom, 12px) - 24px)",
+              paddingTop: "max(16px, env(safe-area-inset-top, 12px))",
+            }}
           >
             {/* Close — subtle circle */}
             <button
@@ -274,7 +317,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
             </button>
 
             {/* Header — film-strip numbering feel */}
-            <div className="mb-6 flex items-start justify-between pr-10">
+            <div className="mb-4 flex items-start justify-between pr-10">
               <div>
                 <div className="font-mono text-micro tracking-[0.2em] text-text-muted/30">
                   NO.{formatFrameNumber(frame.frameIndex)}
@@ -295,6 +338,25 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
                 </span>
                 <span>{STATUS_LABEL[frame.status]}</span>
               </div>
+            </div>
+
+            {/* Reading font size selector */}
+            <div className="mb-4 flex items-center gap-1.5 text-micro text-text-muted/25">
+              <span className="tracking-wider">字级</span>
+              {FONT_SIZE_OPTIONS.map((size) => (
+                <button
+                  key={size}
+                  onClick={() => handleSetReadingFontSize(size)}
+                  className="px-2 py-0.5 text-xs tracking-wider transition-colors"
+                  style={{
+                    borderRadius: "3px",
+                    background: readingFontSize === size ? "var(--surface-2)" : "transparent",
+                    color: readingFontSize === size ? "var(--accent)" : undefined,
+                  }}
+                >
+                  {FONT_SIZE_LABELS[size]}
+                </button>
+              ))}
             </div>
 
             {/* Content — editable */}
@@ -329,9 +391,10 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
               ) : (
                 <>
                   <p
-                    className={`font-serif text-base leading-relaxed whitespace-pre-wrap text-text-primary ${
+                    className={`font-serif leading-relaxed whitespace-pre-wrap text-text-primary overflow-wrap-anywhere break-words max-w-full min-w-0 ${
                       !expanded && isLong ? "line-clamp-4" : ""
                     }`}
+                    style={{ fontSize: READING_FONT_SIZES[readingFontSize] }}
                   >
                     {contentText}
                   </p>
@@ -511,48 +574,50 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
             )}
 
             {/* Export single frame */}
-            <div className="mt-3 flex items-center gap-2 border-t border-border-soft pt-3">
-              <Download size={10} className="text-text-muted/30" />
-              <span className="text-micro text-text-muted/30">导出此帧</span>
-              {/* Export theme selector — small colored dots */}
-              <div className="flex items-center gap-1" title="导出主题">
-                {themeList.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setExportThemeId(t.id as ThemeId)}
-                    className="h-3 w-3 rounded-full transition-transform hover:scale-125"
-                    style={{
-                      background: t.accent,
-                      outline: exportThemeId === t.id ? "1.5px solid var(--text-primary)" : "none",
-                      outlineOffset: 2,
-                    }}
-                  />
-                ))}
+            <div className="mt-3 border-t border-border-soft pt-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Download size={10} className="text-text-muted/30 shrink-0" />
+                <span className="text-micro text-text-muted/30">导出此帧</span>
+                {/* Export theme selector — small colored dots */}
+                <div className="flex items-center gap-1 shrink-0" title="导出主题">
+                  {themeList.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setExportThemeId(t.id as ThemeId)}
+                      className="h-3 w-3 rounded-full transition-transform hover:scale-125"
+                      style={{
+                        background: t.accent,
+                        outline: exportThemeId === t.id ? "1.5px solid var(--text-primary)" : "none",
+                        outlineOffset: 2,
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1.5">
                 <button
                   onClick={handleSaveImage}
                   disabled={exportingImage}
-                  className="flex items-center gap-1 rounded border border-accent/20 bg-accent/5 px-2 py-0.5 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-40"
+                  className="flex items-center gap-1 rounded border border-accent/20 bg-accent/5 px-2 py-0.5 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-40 min-w-0"
                 >
-                  <Image size={10} />
-                  {exportingImage ? "保存中…" : "保存 PNG"}
+                  <Image size={10} className="shrink-0" />
+                  <span className="truncate">{exportingImage ? "保存中…" : "保存 PNG"}</span>
                 </button>
                 {canShare() && (
                   <button
                     onClick={handleShareImage}
                     disabled={sharingImage}
-                    className="flex items-center gap-1 rounded border border-accent/20 bg-accent/5 px-2 py-0.5 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-40"
+                    className="flex items-center gap-1 rounded border border-accent/20 bg-accent/5 px-2 py-0.5 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-40 min-w-0"
                   >
-                    <Image size={10} />
-                    {sharingImage ? "分享中…" : "分享 PNG"}
+                    <Image size={10} className="shrink-0" />
+                    <span className="truncate">{sharingImage ? "分享中…" : "分享 PNG"}</span>
                   </button>
                 )}
                 {EXPORT_BTNS.map(({ label, fn }) => (
                   <button
                     key={label}
                     onClick={() => handleExportSingle(fn)}
-                    className="rounded border border-border-subtle px-2 py-0.5 text-micro text-text-muted/40 transition-colors hover:border-accent/20 hover:text-text-secondary"
+                    className="rounded border border-border-subtle px-2 py-0.5 text-micro text-text-muted/40 transition-colors hover:border-accent/20 hover:text-text-secondary min-w-0 truncate"
                   >
                     {label}
                   </button>
@@ -606,9 +671,10 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
               )}
             </AnimatePresence>
 
-            {/* Image export card (hidden, used for PNG rendering) */}
-            <FrameImageExport ref={exportRef} frame={frame} themeId={exportThemeId} />
           </motion.div>
+
+          {/* Image export canvas — isolated from reading layout, zero impact on flow */}
+          <FrameImageExport ref={exportRef} frame={frame} themeId={exportThemeId} />
         </motion.div>
       )}
     </AnimatePresence>
