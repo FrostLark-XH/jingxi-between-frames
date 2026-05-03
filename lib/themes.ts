@@ -105,6 +105,15 @@ export const themeList: ThemeTokens[] = [mistDarkroom, duskBean, morningGrey];
 
 export const DEFAULT_THEME: ThemeId = "mist-darkroom";
 
+// ── Old → new theme name migration ────────────────────────────────────
+// Users who set themes before the rename may have stale keys in localStorage.
+export const THEME_MIGRATION: Record<string, ThemeId> = {
+  darkroom: "mist-darkroom",
+  "warm-paper": "dusk-bean",
+  "morning-paper": "morning-grey",
+  "dusk-paper": "dusk-bean",
+};
+
 // ── Apply theme to document ────────────────────────────────────────────
 // Only sets data-theme attribute and color-scheme.
 // All CSS variables are handled by [data-theme] selectors in globals.css —

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { toJSON, toMarkdown, toTXT } from "@/lib/exportFrames";
 import { contentHash, isAiStale } from "@/services/ai/types";
+import { ThemeId, themeList } from "@/lib/themes";
 import { useTheme } from "@/hooks/useTheme";
 import { downloadBlob, shareBlob, canShare } from "@/lib/exportImage";
 import FrameImageExport, { ImageExportHandle } from "./FrameImageExport";
@@ -45,6 +46,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
   const [sharingImage, setSharingImage] = useState(false);
   const exportRef = useRef<ImageExportHandle>(null);
   const { themeId } = useTheme();
+  const [exportThemeId, setExportThemeId] = useState<ThemeId>(themeId);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const newTagInputRef = useRef<HTMLInputElement>(null);
 
@@ -154,7 +156,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
   };
 
   const getExportFilename = () =>
-    `jingxi-frame-${frame!.date}-${frame!.time.replace(":", "")}.png`;
+    `jingxi-frame-${frame!.date}-${frame!.time.replace(":", "")}-${exportThemeId}-${Date.now()}.png`;
 
   const handleSaveImage = async () => {
     if (!frame || exportingImage || !exportRef.current) return;
@@ -512,6 +514,21 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
             <div className="mt-3 flex items-center gap-2 border-t border-border-soft pt-3">
               <Download size={10} className="text-text-muted/30" />
               <span className="text-micro text-text-muted/30">导出此帧</span>
+              {/* Export theme selector — small colored dots */}
+              <div className="flex items-center gap-1" title="导出主题">
+                {themeList.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setExportThemeId(t.id as ThemeId)}
+                    className="h-3 w-3 rounded-full transition-transform hover:scale-125"
+                    style={{
+                      background: t.accent,
+                      outline: exportThemeId === t.id ? "1.5px solid var(--text-primary)" : "none",
+                      outlineOffset: 2,
+                    }}
+                  />
+                ))}
+              </div>
               <div className="flex gap-1">
                 <button
                   onClick={handleSaveImage}
@@ -590,7 +607,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
             </AnimatePresence>
 
             {/* Image export card (hidden, used for PNG rendering) */}
-            <FrameImageExport ref={exportRef} frame={frame} themeId={themeId} />
+            <FrameImageExport ref={exportRef} frame={frame} themeId={exportThemeId} />
           </motion.div>
         </motion.div>
       )}

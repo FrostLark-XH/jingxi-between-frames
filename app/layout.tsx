@@ -60,7 +60,13 @@ export default function RootLayout({
             __html: `(function(){
   try {
     var allowed = ["mist-darkroom", "dusk-bean", "morning-grey"];
+    var migration = {darkroom:"mist-darkroom","warm-paper":"dusk-bean","morning-paper":"morning-grey","dusk-paper":"dusk-bean"};
     var theme = localStorage.getItem("jingxi_theme") || "mist-darkroom";
+
+    if (theme in migration) {
+      theme = migration[theme];
+      localStorage.setItem("jingxi_theme", theme);
+    }
 
     if (allowed.indexOf(theme) === -1) {
       theme = "mist-darkroom";

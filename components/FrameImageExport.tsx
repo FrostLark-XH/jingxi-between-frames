@@ -21,16 +21,6 @@ const PADDING = 56;
 const GRAIN_SVG =
   "data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E";
 
-function splitContent(content: string, maxLen: number): string {
-  if (content.length <= maxLen) return content;
-  return content.substring(0, maxLen).replace(/\n[^\n]*$/, "") + "…";
-}
-
-/** Strip leading full-width spaces (indent) from export content. */
-function stripIndent(text: string): string {
-  return text.replace(/^[　]+/, "");
-}
-
 const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImageExport(
   { frame, themeId },
   ref
@@ -67,7 +57,6 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
       style={{
         width: 0,
         height: 0,
-        overflow: "hidden",
         position: "absolute",
         left: 0,
         top: 0,
@@ -82,7 +71,6 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
           fontFamily: "-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', sans-serif",
           color: t.textPrimary,
           position: "relative",
-          overflow: "hidden",
         }}
       >
         {/* Paper grain */}
@@ -163,7 +151,7 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
               whiteSpace: "pre-wrap",
             }}
           >
-            {stripIndent(splitContent(frame.content, 400))}
+            {frame.content}
           </div>
 
           {/* ── Layer C: AI summary ── */}

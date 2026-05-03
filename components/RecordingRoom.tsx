@@ -9,6 +9,7 @@ import { getAiProvider } from "@/services/ai";
 import { formatText } from "@/lib/textFormat";
 import { track } from "@/lib/analytics";
 import useIsMobile from "@/hooks/useIsMobile";
+import useFirstVisitHint from "@/hooks/useFirstVisitHint";
 import MemoryInput from "./MemoryInput";
 import ActionBar from "./ActionBar";
 
@@ -30,6 +31,16 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
   const [isFocused, setIsFocused] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const isMobile = useIsMobile();
+  const { isFirstVisit, completeFirstVisit } = useFirstVisitHint();
+
+  // Auto-complete first visit when user starts typing
+  useEffect(() => {
+    if (isFirstVisit && draftText.trim().length > 0) {
+      completeFirstVisit();
+    }
+  }, [draftText, isFirstVisit, completeFirstVisit]);
+
+  const showHint = isFirstVisit && !draftText.trim();
 
   // Track iOS keyboard height via Visual Viewport API so the sticky bar
   // sits above the keyboard instead of behind it.
@@ -146,28 +157,37 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
 
   const showStickyBar = isMobile && (draftText.trim().length > 0 || isDeveloping);
 
+  // Entrance animation: full stagger on first visit, instant on return
+  const fadeUp = (delay: number) =>
+    isFirstVisit
+      ? {
+          initial: { opacity: 0, y: 8 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.6, delay, ease: [0.4, 0, 0.2, 1] as const },
+        }
+      : { initial: false as const, animate: { opacity: 1, y: 0 } };
+
   return (
     <div className="flex flex-1 flex-col" onClick={handleContainerClick}>
       {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -4 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-        className="mb-12 mt-6 text-center"
-      >
-        <h1 className="font-serif text-xl font-medium tracking-widest text-text-primary">
+      <header className="mb-12 mt-6 text-center">
+        <motion.h1
+          {...fadeUp(0)}
+          className="font-serif text-xl font-medium tracking-widest text-text-primary"
+        >
           镜隙之间
-        </h1>
-        <p className="mt-2 font-serif text-xs italic tracking-wide text-text-muted">
+        </motion.h1>
+        <motion.p
+          {...fadeUp(0.12)}
+          className="mt-2 font-serif text-xs italic tracking-wide text-text-muted"
+        >
           让时间慢慢显影
-        </p>
-      </motion.header>
+        </motion.p>
+      </header>
 
       {/* Memory input — the main visual */}
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.0, delay: 0.2, ease: [0.4, 0, 0.2, 1] }}
+        {...fadeUp(0.28)}
         className="mb-6"
       >
         <MemoryInput
@@ -177,14 +197,13 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
           nextFrameNumber={nextFrameIndex}
           isDeveloping={isDeveloping}
           onFocusChange={setIsFocused}
+          showHint={showHint}
         />
       </motion.div>
 
       {/* Film archive entry — fades when typing or focused */}
       <motion.button
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.4 }}
+        {...fadeUp(0.5)}
         onClick={onViewFilm}
         className="mb-4 flex items-center justify-center gap-0.5 text-xs tracking-wider transition-all duration-300 hover:text-text-muted/60"
         style={{
@@ -205,9 +224,7 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
 
       {/* Data management entry */}
       <motion.button
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.45 }}
+        {...fadeUp(0.55)}
         onClick={onOpenDataManager}
         className="mb-4 flex items-center justify-center text-xs tracking-wider transition-colors duration-300 hover:text-text-muted/60"
         style={{ color: "color-mix(in srgb, var(--text-primary) 14%, transparent)" }}
@@ -218,9 +235,7 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
       {/* Action bar — desktop only, mobile uses sticky bar */}
       {!isMobile && (
         <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          {...fadeUp(0.48)}
           className="mb-6"
         >
           <ActionBar text={draftText} onSave={handleSave} isDeveloping={isDeveloping} />

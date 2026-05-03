@@ -125,7 +125,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
   };
 
   const getSingleFilename = (f: MemoryFrame) =>
-    `jingxi-frame-${f.date}-${f.time.replace(":", "")}.png`;
+    `jingxi-frame-${f.date}-${f.time.replace(":", "")}-${themeId}-${Date.now()}.png`;
 
   const handleSaveImage = async () => {
     if (!singleFrame || exportingImage || !exportRef.current) return;
@@ -158,7 +158,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
     setExportingCollection(true);
     try {
       const blob = await collectionRef.current.renderToBlob();
-      downloadBlob(blob, `jingxi-archive-${collectionFrames[0].date}.png`);
+      downloadBlob(blob, `jingxi-archive-${collectionFrames[0].date}-${themeId}-${Date.now()}.png`);
       track("png_exported");
     } catch {
     } finally {
@@ -172,7 +172,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
     setSharingCollection(true);
     try {
       const blob = await collectionRef.current.renderToBlob();
-      await shareBlob(blob, `jingxi-archive-${collectionFrames[0].date}.png`);
+      await shareBlob(blob, `jingxi-archive-${collectionFrames[0].date}-${themeId}-${Date.now()}.png`);
     } catch {
     } finally {
       setSharingCollection(false);
@@ -195,7 +195,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
       setExportingAllImage(true);
       try {
         const blob = await overviewCollectionRef.current.renderToBlob();
-        downloadBlob(blob, `jingxi-archive-${frames[0].date}.png`);
+        downloadBlob(blob, `jingxi-archive-${frames[0].date}-${themeId}-${Date.now()}.png`);
         track("png_exported");
       } catch {
       } finally {
@@ -219,7 +219,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
       setSharingAllImage(true);
       try {
         const blob = await overviewCollectionRef.current.renderToBlob();
-        await shareBlob(blob, `jingxi-archive-${frames[0].date}.png`);
+        await shareBlob(blob, `jingxi-archive-${frames[0].date}-${themeId}-${Date.now()}.png`);
       } catch {
       } finally {
         setSharingAllImage(false);

@@ -12,9 +12,10 @@ type Props = {
   nextFrameNumber: number;
   isDeveloping?: boolean;
   onFocusChange?: (focused: boolean) => void;
+  showHint?: boolean;
 };
 
-export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, isDeveloping = false, onFocusChange }: Props) {
+export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, isDeveloping = false, onFocusChange, showHint = false }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -55,8 +56,37 @@ export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, 
         )}
       </div>
 
+      {/* First-visit hint — gentle nudge toward the first frame */}
+      {showHint && !value.trim() && (
+        <motion.p
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.35, ease: [0.4, 0, 0.2, 1] }}
+          className="mb-3 text-center font-serif text-xs italic tracking-wider"
+          style={{ color: "color-mix(in srgb, var(--accent) 50%, var(--text-primary) 50%)" }}
+        >
+          把这一瞬留成一帧。
+        </motion.p>
+      )}
+
       {/* Input container */}
       <div className="relative">
+        {/* First-visit warm light — tiny safelight speck near the paper edge */}
+        {showHint && !value.trim() && (
+          <motion.div
+            className="pointer-events-none absolute z-10 rounded-full"
+            style={{
+              width: 5,
+              height: 5,
+              left: 8,
+              top: 12,
+              background: "var(--accent)",
+              filter: "blur(2.5px)",
+            }}
+            animate={{ opacity: [0.1, 0.28, 0.1] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+          />
+        )}
         {/* Textarea — stays fully visible; the developing feel comes from the light sweep + border glow */}
         <textarea
           ref={textareaRef}
