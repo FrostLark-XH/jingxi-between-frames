@@ -59,17 +59,26 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(function(){
   try {
+    var allowed = ["mist-darkroom", "dusk-bean", "morning-grey"];
     var theme = localStorage.getItem("jingxi_theme") || "mist-darkroom";
-    var root = document.documentElement;
-    root.setAttribute("data-theme", theme);
-    root.setAttribute("data-theme-loading", "");
-    root.style.colorScheme = theme === "morning-grey" ? "light" : "dark";
+
+    if (allowed.indexOf(theme) === -1) {
+      theme = "mist-darkroom";
+      localStorage.setItem("jingxi_theme", theme);
+    }
+
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.dataset.themeReady = "true";
+
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
-      var colors = { "mist-darkroom": "#13161A", "dusk-bean": "#1F191B", "morning-grey": "#ECE6DC" };
-      meta.setAttribute("content", colors[theme] || "#13161A");
+      var color = theme === "morning-grey" ? "#e8e1d3" : "#111318";
+      meta.setAttribute("content", color);
     }
-  } catch (e) {}
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "mist-darkroom");
+    document.documentElement.dataset.themeReady = "true";
+  }
 })();`,
           }}
         />

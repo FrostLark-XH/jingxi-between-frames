@@ -105,34 +105,14 @@ export const themeList: ThemeTokens[] = [mistDarkroom, duskBean, morningGrey];
 
 export const DEFAULT_THEME: ThemeId = "mist-darkroom";
 
-// ── Apply theme to CSS variables ─────────────────────────────────────────
-// Only sets base values. All surfaces/borders/text variants are derived
-// from these via color-mix() in globals.css.
-
-function hexToRgb(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r} ${g} ${b}`;
-}
+// ── Apply theme to document ────────────────────────────────────────────
+// Only sets data-theme attribute and color-scheme.
+// All CSS variables are handled by [data-theme] selectors in globals.css —
+// this keeps a single source of truth and prevents inline-style override races.
 
 export function applyThemeToDocument(theme: ThemeTokens): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   root.setAttribute("data-theme", theme.id);
   root.style.colorScheme = theme.id === "morning-grey" ? "light" : "dark";
-  root.style.setProperty("--bg-base", theme.bgBase);
-  root.style.setProperty("--bg-soft", theme.bgSoft);
-  root.style.setProperty("--accent", theme.accent);
-  root.style.setProperty("--accent-soft", theme.accentSoft);
-  root.style.setProperty("--accent-glow", theme.accentGlow);
-  root.style.setProperty("--text-primary", theme.textPrimary);
-  root.style.setProperty("--status-error", theme.statusError);
-
-  // RGB variants for Tailwind opacity modifier compatibility
-  root.style.setProperty("--bg-base-rgb", hexToRgb(theme.bgBase));
-  root.style.setProperty("--bg-soft-rgb", hexToRgb(theme.bgSoft));
-  root.style.setProperty("--accent-rgb", hexToRgb(theme.accent));
-  root.style.setProperty("--text-primary-rgb", hexToRgb(theme.textPrimary));
-  root.style.setProperty("--status-error-rgb", hexToRgb(theme.statusError));
 }

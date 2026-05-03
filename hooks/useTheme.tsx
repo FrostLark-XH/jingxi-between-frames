@@ -44,14 +44,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     applyThemeToDocument(themes[themeId]);
     document.documentElement.removeAttribute("data-theme-loading");
 
-    // Update <meta name="theme-color"> for browser chrome
     const meta = document.querySelector('meta[name="theme-color"]');
+    const color = themeId === "morning-grey" ? "#e8e1d3" : "#111318";
     if (meta) {
-      meta.setAttribute("content", themes[themeId].bgBase);
+      meta.setAttribute("content", color);
     } else {
       const newMeta = document.createElement("meta");
       newMeta.name = "theme-color";
-      newMeta.content = themes[themeId].bgBase;
+      newMeta.content = color;
       document.head.appendChild(newMeta);
     }
   }, [themeId, mounted]);

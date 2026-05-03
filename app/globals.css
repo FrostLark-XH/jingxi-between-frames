@@ -17,6 +17,7 @@ html {
 
 /* Default theme fallback (冷灰暗房) — overridden by ThemeProvider via JS */
 :root {
+  color-scheme: dark;
   /* ── Fonts ── */
   --font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
 
@@ -89,18 +90,19 @@ body {
 }
 
 /* ── Theme FOUC prevention ────────────────────────────────────────────
-   Inline script sets data-theme before first paint, and
-   data-theme-loading suppresses color transitions during initial load. */
+   Inline script sets data-theme-ready before first paint. Until then,
+   suppress transitions to avoid theme-change flicker. */
 
-html[data-theme-loading] *,
-html[data-theme-loading] *::before,
-html[data-theme-loading] *::after {
+html:not([data-theme-ready]) *,
+html:not([data-theme-ready]) *::before,
+html:not([data-theme-ready]) *::after {
   transition: none !important;
 }
 
 /* ── Theme: 暖玫旧纸 (dusk-bean) ────────────────────────────────────── */
 
 [data-theme="dusk-bean"] {
+  color-scheme: dark;
   --bg-base: #1F191B;
   --bg-soft: #292024;
   --accent: #C88070;
@@ -118,6 +120,7 @@ html[data-theme-loading] *::after {
 /* ── Theme: 晨雾米纸 (morning-grey) ─────────────────────────────────── */
 
 [data-theme="morning-grey"] {
+  color-scheme: light;
   --bg-base: #ECE6DC;
   --bg-soft: #E3DCCF;
   --accent: #A07858;
