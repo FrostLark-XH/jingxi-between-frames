@@ -246,8 +246,8 @@ export default function DataManager({
                     }}
                   >
                     <p className="text-text-secondary">
-                      将用 <span className="text-text-primary font-medium">{previewCount}</span> 条备份记录
-                      覆盖当前 <span className="text-text-primary font-medium">{frameCount}</span> 条本地记录，此操作不可撤销。
+                      将用备份中的 <span className="text-text-primary font-medium">{previewCount}</span> 条记录
+                      完全替换当前 <span className="text-text-primary font-medium">{frameCount}</span> 条本地记录，此操作不可撤销。
                     </p>
                     <div className="flex gap-2">
                       <button

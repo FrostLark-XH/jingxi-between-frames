@@ -173,18 +173,12 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, frames: nextFrames };
     }
     case "IMPORT_FRAMES": {
-      // Validate, migrate, and deduplicate by id
+      // Validate and migrate all imported frames, then replace entirely
       const incoming = action.frames
         .map((f) => migrateFrame(f as Record<string, unknown>))
         .filter((f): f is MemoryFrame => f !== null);
-      const idMap = new Map<string, MemoryFrame>();
-      for (const f of incoming) idMap.set(f.id, f);
-      const nextFrames = [
-        ...idMap.values(),
-        ...state.frames.filter((f) => !idMap.has(f.id)),
-      ];
-      saveFrames(nextFrames);
-      return { ...state, frames: nextFrames };
+      saveFrames(incoming);
+      return { ...state, frames: incoming };
     }
     case "CLEAR_ALL_FRAMES": {
       saveFrames([]);

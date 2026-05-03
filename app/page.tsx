@@ -56,7 +56,19 @@ export default function HomePage() {
   useEffect(() => {
     if (!trackedAppOpen.current) {
       trackedAppOpen.current = true;
-      track("app_open");
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+      let displayMode = "browser";
+      if (typeof window !== "undefined") {
+        if (window.matchMedia("(display-mode: standalone)").matches) {
+          displayMode = "standalone";
+        } else if (window.matchMedia("(display-mode: fullscreen)").matches) {
+          displayMode = "fullscreen";
+        }
+      }
+      track("app_open", {
+        deviceType: isMobile ? "mobile" : "desktop",
+        displayMode,
+      });
     }
   }, []);
 
@@ -99,8 +111,6 @@ export default function HomePage() {
   const handleBackToRecording = () => {
     setView("recording-room");
   };
-
-  const totalAllFrames = state.frames.length;
 
   return (
     <>
