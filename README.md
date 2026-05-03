@@ -66,11 +66,14 @@ npm run build
 
 ```
 v0.3/
-├── app/            # Next.js App Router（单路由 "/"）
-├── components/     # 17 个组件
+├── app/            # Next.js App Router（页面 + API 路由）
+├── components/     # 22 个 React 组件
 ├── hooks/          # useAppState / useTheme / useIsMobile
-├── lib/            # 主题、导出、Shader
-├── services/ai/    # AI Provider（real → mock fallback）
-├── data/           # MemoryFrame 类型定义
-└── tests/          # Playwright E2E
+├── lib/            # 主题、导出、限流、埋点、Shader
+├── services/ai/    # AI 显影服务层（real → mock fallback）
+├── data/           # MemoryFrame 类型定义与聚合
+├── public/         # PWA 图标与静态资源
+├── docs/           # 项目文档（freeze / product / ops）
+├── tests/          # Playwright E2E 测试
+└── .github/        # CI/CD（Cloudflare + Vercel 自动部署）
 ```
