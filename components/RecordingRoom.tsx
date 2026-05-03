@@ -205,7 +205,7 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
       <motion.button
         {...fadeUp(0.5)}
         onClick={onViewFilm}
-        className="mb-4 flex items-center justify-center gap-0.5 text-xs tracking-wider transition-all duration-300 hover:text-text-muted/60"
+        className="mb-4 flex items-center justify-center gap-0.5 text-xs tracking-wider max-w-full min-w-0 transition-all duration-300 hover:text-text-muted/60"
         style={{
           color: (draftText.trim() || isFocused)
             ? "color-mix(in srgb, var(--text-primary) 12%, transparent)"
@@ -213,20 +213,20 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
           pointerEvents: isFocused ? "none" : "auto",
         }}
       >
-        查看时间胶片
+        <span className="truncate">查看时间胶片</span>
         {todayFrameCount > 0 && (
-          <span className="ml-1">
+          <span className="shrink-0">
             · 今日 {todayFrameCount} 帧
           </span>
         )}
-        <ChevronRight size={11} />
+        <ChevronRight size={11} className="shrink-0" />
       </motion.button>
 
       {/* Data management entry */}
       <motion.button
         {...fadeUp(0.55)}
         onClick={onOpenDataManager}
-        className="mb-4 flex items-center justify-center text-xs tracking-wider transition-colors duration-300 hover:text-text-muted/60"
+        className="mb-4 flex items-center justify-center text-xs tracking-wider max-w-full transition-colors duration-300 hover:text-text-muted/60"
         style={{ color: "color-mix(in srgb, var(--text-primary) 14%, transparent)" }}
       >
         数据管理
