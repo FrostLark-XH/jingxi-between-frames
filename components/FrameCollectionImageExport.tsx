@@ -17,7 +17,7 @@ type Props = {
 
 const CARD_W = 750;
 const PADDING = 56;
-const GAP = 28;
+const GAP = 24;
 
 const GRAIN_SVG =
   "data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E";
@@ -31,6 +31,11 @@ function formatExportTime(): string {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+/** Strip leading full-width spaces (indent) from export content. */
+function stripIndent(text: string): string {
+  return text.replace(/^[　]+/, "");
 }
 
 const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
@@ -55,12 +60,11 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
     }));
 
     const accentSoft = t.accentSoft;
-    const textMuted = hexToRgba(t.textPrimary, 0.45);
     const textMutedLow = hexToRgba(t.textPrimary, 0.25);
-    const textSummary = hexToRgba(t.textPrimary, 0.55);
+    const textSummary = hexToRgba(t.textPrimary, 0.65);
     const borderSoft = hexToRgba(t.textPrimary, 0.07);
-    const tagBg = hexToRgba(t.accent, 0.08);
-    const tagColor = hexToRgba(t.textPrimary, 0.6);
+    const tagBg = hexToRgba(t.accent, 0.05);
+    const tagText = hexToRgba(t.textPrimary, 0.68);
 
     if (frames.length === 0) return null;
 
@@ -103,7 +107,7 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
 
           <div style={{ position: "relative", zIndex: 1 }}>
             {/* ── Cover header ── */}
-            <div style={{ marginBottom: 40 }}>
+            <div style={{ marginBottom: 36 }}>
               <div
                 style={{
                   fontSize: 12,
@@ -116,8 +120,8 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
               </div>
               <div
                 style={{
-                  fontSize: 24,
-                  fontWeight: 600,
+                  fontSize: 22,
+                  fontWeight: 500,
                   fontFamily: "'Noto Serif SC', 'Songti SC', serif",
                   letterSpacing: "0.08em",
                   marginBottom: 8,
@@ -141,7 +145,7 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
               style={{
                 height: 1,
                 backgroundColor: borderSoft,
-                marginBottom: 36,
+                marginBottom: 30,
               }}
             />
 
@@ -162,7 +166,7 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
                     display: "flex",
                     alignItems: "baseline",
                     gap: 12,
-                    marginBottom: 18,
+                    marginBottom: 16,
                   }}
                 >
                   <span
@@ -189,24 +193,24 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
                 {/* ── Main: original content ── */}
                 <div
                   style={{
-                    fontSize: 18,
-                    lineHeight: 1.95,
+                    fontSize: 17,
+                    lineHeight: 1.9,
                     color: t.textPrimary,
                     fontFamily: "'Noto Serif SC', 'Songti SC', serif",
                     letterSpacing: "0.03em",
-                    marginBottom: 22,
+                    marginBottom: 18,
                     whiteSpace: "pre-wrap",
                   }}
                 >
-                  {splitContent(frame.content, 280)}
+                  {stripIndent(splitContent(frame.content, 280))}
                 </div>
 
                 {/* ── AI summary ── */}
                 {frame.summary && (
-                  <div style={{ marginBottom: 18 }}>
+                  <div style={{ marginBottom: 16 }}>
                     <div
                       style={{
-                        fontSize: 10,
+                        fontSize: 11,
                         letterSpacing: "0.1em",
                         color: textMutedLow,
                         marginBottom: 8,
@@ -221,7 +225,7 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
                           flexShrink: 0,
                           backgroundColor: accentSoft,
                           borderRadius: 1,
-                          opacity: 0.3,
+                          opacity: 0.25,
                         }}
                       />
                       <p
@@ -242,16 +246,16 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
 
                 {/* ── Tags ── */}
                 {frame.tags.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
                     {frame.tags.map((tag) => (
                       <span
                         key={tag}
                         style={{
                           fontSize: 11,
-                          padding: "3px 10px",
+                          padding: "3px 12px",
                           backgroundColor: tagBg,
                           borderRadius: 4,
-                          color: tagColor,
+                          color: tagText,
                           letterSpacing: "0.03em",
                         }}
                       >
@@ -281,20 +285,19 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
               style={{
                 height: 1,
                 backgroundColor: borderSoft,
-                marginTop: 36,
+                marginTop: 32,
                 marginBottom: 18,
               }}
             />
             <div
               style={{
                 display: "flex",
-                justifyContent: "space-between",
+                justifyContent: "flex-end",
                 fontSize: 11,
                 letterSpacing: "0.15em",
                 color: textMutedLow,
               }}
             >
-              <span>由镜隙之间显影</span>
               <span>时间帧档案卡  ·  {formatExportTime()}</span>
             </div>
           </div>

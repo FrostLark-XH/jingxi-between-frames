@@ -14,6 +14,24 @@ export const metadata: Metadata = {
   icons: {
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
   },
+  openGraph: {
+    title: "镜隙之间",
+    description: "让时间慢慢显影",
+    images: [
+      {
+        url: "/images/cover.jpg",
+        width: 1200,
+        height: 630,
+        alt: "镜隙之间",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "镜隙之间",
+    description: "让时间慢慢显影",
+    images: ["/images/cover.jpg"],
+  },
   formatDetection: {
     telephone: false,
     date: false,

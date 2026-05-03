@@ -26,6 +26,11 @@ function splitContent(content: string, maxLen: number): string {
   return content.substring(0, maxLen).replace(/\n[^\n]*$/, "") + "…";
 }
 
+/** Strip leading full-width spaces (indent) from export content. */
+function stripIndent(text: string): string {
+  return text.replace(/^[　]+/, "");
+}
+
 const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImageExport(
   { frame, themeId },
   ref
@@ -50,13 +55,11 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
   }));
 
   const accentSoft = t.accentSoft;
-  const textSecondary = hexToRgba(t.textPrimary, 0.7);
-  const textMuted = hexToRgba(t.textPrimary, 0.45);
   const textMutedLow = hexToRgba(t.textPrimary, 0.25);
-  const textSummary = hexToRgba(t.textPrimary, 0.55);
+  const textSummary = hexToRgba(t.textPrimary, 0.65);
   const dividerColor = hexToRgba(t.textPrimary, 0.07);
-  const tagBg = hexToRgba(t.accent, 0.08);
-  const tagColor = hexToRgba(t.textPrimary, 0.6);
+  const tagBg = hexToRgba(t.accent, 0.05);
+  const tagText = hexToRgba(t.textPrimary, 0.68);
   const toneColor = hexToRgba(t.accent, 0.5);
 
   return (
@@ -96,7 +99,7 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
         />
 
         <div style={{ position: "relative", zIndex: 1 }}>
-          {/* ── Header: brand ── */}
+          {/* ── Layer A: Header — brand ── */}
           <div
             style={{
               fontSize: 12,
@@ -108,13 +111,13 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
             镜隙之间
           </div>
 
-          {/* ── Header: frame number + date/time ── */}
+          {/* ── Layer A: Header — frame number + date/time ── */}
           <div
             style={{
               display: "flex",
               alignItems: "baseline",
               gap: 14,
-              marginBottom: 28,
+              marginBottom: 24,
             }}
           >
             <span
@@ -144,34 +147,34 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
             style={{
               height: 1,
               backgroundColor: dividerColor,
-              marginBottom: 36,
+              marginBottom: 30,
             }}
           />
 
-          {/* ── Main: original content ── */}
+          {/* ── Layer B: Main content ── */}
           <div
             style={{
-              fontSize: 21,
-              lineHeight: 2.0,
+              fontSize: 20,
+              lineHeight: 1.9,
               color: t.textPrimary,
               fontFamily: "'Noto Serif SC', 'Songti SC', serif",
               letterSpacing: "0.03em",
-              marginBottom: 40,
+              marginBottom: 34,
               whiteSpace: "pre-wrap",
             }}
           >
-            {splitContent(frame.content, 400)}
+            {stripIndent(splitContent(frame.content, 400))}
           </div>
 
-          {/* ── AI summary ── */}
+          {/* ── Layer C: AI summary ── */}
           {frame.summary && (
-            <div style={{ marginBottom: 28 }}>
+            <div style={{ marginBottom: 24 }}>
               <div
                 style={{
                   fontSize: 11,
                   letterSpacing: "0.1em",
                   color: textMutedLow,
-                  marginBottom: 12,
+                  marginBottom: 10,
                 }}
               >
                 显影摘要
@@ -183,7 +186,7 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
                     flexShrink: 0,
                     backgroundColor: accentSoft,
                     borderRadius: 1,
-                    opacity: 0.3,
+                    opacity: 0.25,
                   }}
                 />
                 <p
@@ -202,25 +205,25 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
             </div>
           )}
 
-          {/* ── Tags ── */}
+          {/* ── Layer D: Tags ── */}
           {frame.tags.length > 0 && (
             <div
               style={{
                 display: "flex",
                 flexWrap: "wrap",
                 gap: 8,
-                marginBottom: 14,
+                marginBottom: 12,
               }}
             >
               {frame.tags.map((tag) => (
                 <span
                   key={tag}
                   style={{
-                    fontSize: 12,
-                    padding: "4px 12px",
+                    fontSize: 11,
+                    padding: "3px 14px",
                     backgroundColor: tagBg,
                     borderRadius: 4,
-                    color: tagColor,
+                    color: tagText,
                     letterSpacing: "0.03em",
                   }}
                 >
@@ -230,9 +233,9 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
             </div>
           )}
 
-          {/* ── Tone ── */}
+          {/* ── Layer D: Tone ── */}
           {frame.tone && (
-            <div style={{ marginBottom: 36 }}>
+            <div style={{ marginBottom: 28 }}>
               <span
                 style={{
                   fontSize: 11,
@@ -256,13 +259,12 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
+              justifyContent: "flex-end",
               fontSize: 11,
               letterSpacing: "0.15em",
               color: textMutedLow,
             }}
           >
-            <span>镜隙之间</span>
             <span>时间帧档案卡</span>
           </div>
         </div>

@@ -25,6 +25,27 @@ export type {
 } from "./types";
 export { contentHash } from "./types";
 
+/** Clean common LLM punctuation errors from generated text. */
+function sanitizeText(text: string): string {
+  return text
+    .replace(/。，/g, "，")
+    .replace(/，。/g, "。")
+    .replace(/。。/g, "。")
+    .replace(/，，/g, "，")
+    .replace(/！，/g, "，")
+    .replace(/？，/g, "，")
+    .replace(/。、/g, "、")
+    .replace(/，、/g, "、");
+}
+
+function sanitizeOutput(output: FrameAiOutput): FrameAiOutput {
+  return {
+    ...output,
+    summary: sanitizeText(output.summary),
+    tags: output.tags.map(sanitizeText),
+  };
+}
+
 // Client-safe: always returns mock. Real provider is server-only.
 export function getAiProvider(): AiProvider & DaySummaryProvider {
   return mockAiProvider;
@@ -38,10 +59,11 @@ export async function getDevelopFrameResult(
 ): Promise<FrameAiOutput> {
   try {
     const { developFrameReal } = await import("./realProvider");
-    return await developFrameReal(content, createdAt);
+    const result = await developFrameReal(content, createdAt);
+    return sanitizeOutput(result);
   } catch {
     const result = await mockAiProvider.processFrame({ content });
-    return { ...result, provider: "mock" };
+    return sanitizeOutput({ ...result, provider: "mock" });
   }
 }
 
