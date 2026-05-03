@@ -42,7 +42,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
     applyThemeToDocument(themes[themeId]);
-    document.documentElement.removeAttribute("data-theme-loading");
 
     const meta = document.querySelector('meta[name="theme-color"]');
     const color = themeId === "morning-grey" ? "#e8e1d3" : "#111318";
