@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { toJSON, toMarkdown, toTXT } from "@/lib/exportFrames";
 import { contentHash, isAiStale } from "@/services/ai/types";
-import { ThemeId, themeList } from "@/lib/themes";
+import { ThemeId } from "@/lib/themes";
 import { useTheme } from "@/hooks/useTheme";
 import useIsMobile from "@/hooks/useIsMobile";
 import { downloadBlob, shareBlob, canShare } from "@/lib/exportImage";
@@ -75,7 +75,6 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
   const exportRef = useRef<ImageExportHandle>(null);
   const { themeId } = useTheme();
   const isMobile = useIsMobile();
-  const [exportThemeId, setExportThemeId] = useState<ThemeId>(themeId);
   const [readingFontSize, setReadingFontSize] = useState<ReadingFontSize>(loadReadingFontSize);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const newTagInputRef = useRef<HTMLInputElement>(null);
@@ -186,7 +185,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
   };
 
   const getExportFilename = () =>
-    `jingxi-frame-${frame!.date}-${frame!.time.replace(":", "")}-${exportThemeId}-${Date.now()}.png`;
+    `jingxi-frame-${frame!.date}-${frame!.time.replace(":", "")}-${Date.now()}.png`;
 
   const handleSaveImage = async () => {
     if (!frame || exportingImage || !exportRef.current) return;
@@ -580,20 +579,6 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
                   <div className="flex items-center gap-2 mb-2">
                     <Download size={10} className="text-text-muted/30 shrink-0" />
                     <span className="text-micro text-text-muted/30">导出此帧</span>
-                    <div className="flex items-center gap-1 shrink-0" title="导出主题">
-                      {themeList.map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => setExportThemeId(t.id as ThemeId)}
-                          className="h-3 w-3 rounded-full transition-transform hover:scale-125"
-                          style={{
-                            background: t.accent,
-                            outline: exportThemeId === t.id ? "1.5px solid var(--text-primary)" : "none",
-                            outlineOffset: 2,
-                          }}
-                        />
-                      ))}
-                    </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     <button
@@ -939,21 +924,6 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
                   <div className="flex items-center gap-2 mb-2">
                     <Download size={10} className="text-text-muted/30 shrink-0" />
                     <span className="text-micro text-text-muted/30">导出此帧</span>
-                    {/* Export theme selector — small colored dots */}
-                    <div className="flex items-center gap-1 shrink-0" title="导出主题">
-                      {themeList.map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => setExportThemeId(t.id as ThemeId)}
-                          className="h-3 w-3 rounded-full transition-transform hover:scale-125"
-                          style={{
-                            background: t.accent,
-                            outline: exportThemeId === t.id ? "1.5px solid var(--text-primary)" : "none",
-                            outlineOffset: 2,
-                          }}
-                        />
-                      ))}
-                    </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     <button
@@ -1037,7 +1007,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
           </motion.div>
 
           {/* Image export canvas — isolated from reading layout, zero impact on flow */}
-          <FrameImageExport ref={exportRef} frame={frame} themeId={exportThemeId} />
+          <FrameImageExport ref={exportRef} frame={frame} themeId={themeId} />
         </motion.div>
       )}
     </AnimatePresence>
