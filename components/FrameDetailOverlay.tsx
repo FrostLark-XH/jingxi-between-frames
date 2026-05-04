@@ -344,24 +344,18 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
                  ═══════════════════════════════════════════ */
               <>
                 {/* 1. Header */}
-                <div className="mb-4 pr-10">
-                  <div className="font-serif text-xs tracking-widest text-text-muted/30">
-                    镜隙之间
-                  </div>
-                  <div className="mt-1 font-mono text-micro tracking-[0.2em] text-text-muted/25">
-                    NO.{formatFrameNumber(frame.frameIndex)}
-                  </div>
-                  <div className="mt-0.5 font-mono text-xs tracking-wider text-text-secondary">
-                    {frame.date} · {frame.time}
+                <div className="mb-3 pr-10">
+                  <div className="font-mono text-xs tracking-[0.15em] text-text-muted/35">
+                    NO.{formatFrameNumber(frame.frameIndex)} · {frame.date} · {frame.time}
                   </div>
                 </div>
 
-                {/* Divider */}
-                <div className="mb-4 border-t border-border-soft" />
+                {/* Divider — subtle */}
+                <div className="mb-3 border-t border-border-soft opacity-40" />
 
                 {/* 2. Content */}
                 {isEditing ? (
-                  <div className="mb-4 space-y-2">
+                  <div className="mb-3 space-y-2">
                     <textarea
                       ref={editTextareaRef}
                       value={editContent}
@@ -388,7 +382,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
                     </div>
                   </div>
                 ) : (
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <p
                       className={`font-serif leading-relaxed whitespace-pre-wrap text-text-primary overflow-wrap-anywhere break-words max-w-full min-w-0 ${
                         !expanded && isLong ? "line-clamp-4" : ""
@@ -509,7 +503,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
                 </div>
 
                 {/* Divider */}
-                <div className="mb-4 border-t border-border-soft" />
+                <div className="mb-3 border-t border-border-soft opacity-40" />
 
                 {/* 5. Actions */}
                 {confirmingDelete ? (
@@ -572,7 +566,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
                 )}
 
                 {/* Divider */}
-                <div className="mb-4 border-t border-border-soft" />
+                <div className="mb-3 border-t border-border-soft opacity-40" />
 
                 {/* 6. Export */}
                 <div>
