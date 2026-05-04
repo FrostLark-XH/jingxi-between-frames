@@ -298,6 +298,11 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
         paddingTop: "max(16px, env(safe-area-inset-top, 12px))",
       };
 
+  // Build className to avoid Tailwind conflicting with mobile inline styles
+  const panelClassName = isMobile
+    ? "relative w-full border border-border-subtle paper-grain rounded-card border-l border-l-border-warm bg-bg-base"
+    : "relative w-full max-w-app border border-border-subtle p-6 paper-grain rounded-card border-l border-l-border-warm bg-bg-base overflow-x-hidden";
+
   return (
     <AnimatePresence>
       {frame && (
@@ -323,9 +328,7 @@ export default function FrameDetailOverlay({ frame, onClose, onDelete, onUpdate,
             exit={{ opacity: 0, scale: 0.97, y: 16 }}
             transition={{ type: "spring", stiffness: 350, damping: 28 }}
             onClick={(e) => e.stopPropagation()}
-            className={`relative w-full border border-border-subtle p-6 paper-grain rounded-card border-l border-l-border-warm bg-bg-base overflow-x-hidden ${
-              isMobile ? "" : "max-w-app"
-            }`}
+            className={panelClassName}
             style={panelStyle}
           >
             {/* Close — subtle circle */}
