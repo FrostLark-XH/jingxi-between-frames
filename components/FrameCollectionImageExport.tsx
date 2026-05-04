@@ -63,6 +63,7 @@ const FrameCollectionImageExport = forwardRef<CollectionExportHandle, Props>(
         style={{
           width: 0,
           height: 0,
+          overflow: "hidden",
           position: "absolute",
           left: 0,
           top: 0,

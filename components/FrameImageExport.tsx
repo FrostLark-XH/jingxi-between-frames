@@ -57,6 +57,7 @@ const FrameImageExport = forwardRef<ImageExportHandle, Props>(function FrameImag
       style={{
         width: 0,
         height: 0,
+        overflow: "hidden",
         position: "absolute",
         left: 0,
         top: 0,
