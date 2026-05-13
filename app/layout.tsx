@@ -12,14 +12,18 @@ export const metadata: Metadata = {
     title: "镜隙之间",
   },
   icons: {
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+    icon: [
+      { url: "/icons/icon-192-v2.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512-v2.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon-v2.png", sizes: "180x180" }],
   },
   openGraph: {
     title: "镜隙之间",
     description: "让时间慢慢显影",
     images: [
       {
-        url: "/images/cover.jpg",
+        url: "/images/cover-v2.jpg",
         width: 1200,
         height: 630,
         alt: "镜隙之间",
@@ -30,7 +34,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "镜隙之间",
     description: "让时间慢慢显影",
-    images: ["/images/cover.jpg"],
+    images: ["/images/cover-v2.jpg"],
   },
   formatDetection: {
     telephone: false,
