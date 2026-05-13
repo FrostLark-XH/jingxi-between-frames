@@ -1,0 +1,6 @@
+# Cloudflare Pages + next-on-pages configuration
+# Docs: https://developers.cloudflare.com/pages/framework-guides/nextjs/ssr/
+
+name = "jingxi-between-frames"
+compatibility_date = "2025-05-02"
+compatibility_flags = ["nodejs_compat"]

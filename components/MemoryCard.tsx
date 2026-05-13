@@ -64,13 +64,13 @@ function MemoryCardInner({ frame, index, onClick, isMobile }: Props) {
       </div>
 
       {/* User's text — visual focus */}
-      <p className="mb-3 line-clamp-4 font-serif text-base leading-relaxed text-text-primary">
+      <p className="mb-3 line-clamp-4 font-serif text-base leading-relaxed whitespace-pre-wrap text-text-primary">
         {frame.content}
       </p>
 
       {/* AI Summary — subtle annotation */}
-      <p className="mb-3 text-xs leading-relaxed text-text-muted/50">
-        {frame.summary}
+      <p className={`mb-3 text-xs leading-relaxed ${frame.summary ? "text-text-muted/50" : "text-text-muted/20 italic"}`}>
+        {frame.summary || "请静候时光沉淀…"}
       </p>
 
       {/* Tags */}

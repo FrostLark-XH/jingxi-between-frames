@@ -9,6 +9,8 @@ type Props = {
   hideThemeSwitcher?: boolean;
 };
 
+const FEEDBACK_URL = process.env.NEXT_PUBLIC_FEEDBACK_URL;
+
 export default function AppShell({ children, hideThemeSwitcher = false }: Props) {
   const constraintsRef = useRef<HTMLDivElement>(null);
 
@@ -18,9 +20,22 @@ export default function AppShell({ children, hideThemeSwitcher = false }: Props)
 
   return (
     <div ref={constraintsRef} className="relative min-h-screen min-h-dvh w-full overflow-x-hidden">
-      {/* Theme switcher — subtle, top-right */}
+      {/* Top-right controls */}
       {!hideThemeSwitcher && (
-        <div className="fixed right-4 top-4 z-30" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+        <div
+          className="fixed right-4 top-4 z-30 flex items-center gap-3"
+          style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+        >
+          {FEEDBACK_URL && (
+            <a
+              href={FEEDBACK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs tracking-wider text-text-muted/35 transition-colors hover:text-text-muted/70"
+            >
+              反馈体验
+            </a>
+          )}
           <ThemeSwitcher />
         </div>
       )}

@@ -2,6 +2,8 @@
 const { chromium } = require("playwright");
 const fs = require("fs");
 
+const BASE_URL = process.env.E2E_BASE_URL || "http://localhost:3000";
+
 // Helper: type text through React's controlled component
 async function reactType(page, text) {
   const ta = page.locator("textarea");
@@ -18,7 +20,14 @@ async function reactType(page, text) {
     el.dispatchEvent(new Event("input", { bubbles: true }));
   }, text);
 
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(500);
+}
+
+async function clickTestId(page, testId) {
+  await page.evaluate((id) => {
+    const el = document.querySelector(`[data-testid="${id}"]`);
+    if (el instanceof HTMLElement) el.click();
+  }, testId);
 }
 
 (async () => {
@@ -29,7 +38,7 @@ async function reactType(page, text) {
   page.on("pageerror", err => errors.push(err.message));
 
   console.log("=== 1. 加载首页 ===");
-  await page.goto("http://localhost:3000", { waitUntil: "networkidle" });
+  await page.goto(BASE_URL, { waitUntil: "networkidle" });
   await page.waitForTimeout(1000);
 
   if (errors.length > 0) {
@@ -68,45 +77,50 @@ async function reactType(page, text) {
   console.log("\n=== 4. 进入时间胶片 → 打开档案 ===");
   await page.locator("text=查看时间胶片").click();
   await page.waitForTimeout(800);
-  await page.locator("text=时间胶片").waitFor({ state: "visible" });
-  // "档案" text span is hidden on mobile, use programmatic click
-  await page.evaluate(() => {
-    const btns = document.querySelectorAll("button");
-    for (const btn of btns) {
-      if (btn.textContent?.includes("档案")) { btn.click(); break; }
-    }
-  });
+  await page.locator("text=时间胶片").first().waitFor({ state: "visible" });
+  await page.getByRole("button", { name: "档案" }).first().click();
   await page.waitForTimeout(800);
 
+  await page.locator('h2:has-text("档案")').waitFor({ state: "visible" });
   console.log(`档案面板: ${await page.locator('h2:has-text("档案")').isVisible()}`);
   console.log(`统计: ${await page.locator('text=/共 \\d+ 帧/').first().textContent()}`);
 
   // Select all frames
-  await page.locator("text=全选").first().click();
+  await clickTestId(page, "archive-select-all");
   await page.waitForTimeout(200);
-  console.log(`选中: ${await page.locator('text=/已选 \\d+ 帧/').first().textContent()}`);
+  await page.getByTestId("archive-selected-export-txt").waitFor({ state: "visible" });
+  console.log("选中: selected export controls visible");
 
   console.log("\n=== 5. 导出测试 ===");
   // TXT
+  await clickTestId(page, "archive-selected-export-txt");
+  await page.waitForTimeout(100);
   const [txtDL] = await Promise.all([
     page.waitForEvent("download", { timeout: 5000 }),
-    page.locator('button:has-text("TXT")').first().click(),
+    clickTestId(page, "archive-selected-export-txt"),
   ]);
   const txt = fs.readFileSync(await txtDL.path(), "utf-8");
   console.log(`TXT: BOM=${txt.charCodeAt(0) === 0xFEFF}, 中文=${/[一-鿿]/.test(txt)}, ${txt.length}字节`);
+  await page.waitForTimeout(300);
 
   // JSON
+  await clickTestId(page, "archive-selected-export-json");
+  await page.waitForTimeout(100);
   const [jsonDL] = await Promise.all([
     page.waitForEvent("download", { timeout: 5000 }),
-    page.locator('button:has-text("JSON")').first().click(),
+    clickTestId(page, "archive-selected-export-json"),
   ]);
-  const json = JSON.parse(fs.readFileSync(await jsonDL.path(), "utf-8"));
+  const jsonText = fs.readFileSync(await jsonDL.path(), "utf-8").replace(/^\uFEFF/, "");
+  const json = JSON.parse(jsonText);
   console.log(`JSON: ${json.length}帧, 标签="${json[0]?.tags?.join(",")}"`);
+  await page.waitForTimeout(300);
 
   // MD
+  await clickTestId(page, "archive-selected-export-md");
+  await page.waitForTimeout(100);
   const [mdDL] = await Promise.all([
     page.waitForEvent("download", { timeout: 5000 }),
-    page.locator('button:has-text("MD")').first().click(),
+    clickTestId(page, "archive-selected-export-md"),
   ]);
   const md = fs.readFileSync(await mdDL.path(), "utf-8");
   console.log(`MD: 中文=${/[一-鿿]/.test(md)}, 有效=${md.includes("# 镜隙之间")}`);

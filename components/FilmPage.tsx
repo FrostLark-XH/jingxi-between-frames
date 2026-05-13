@@ -2,8 +2,8 @@
 
 import { motion } from "framer-motion";
 import { useEffect, memo } from "react";
-import { ArrowLeft } from "lucide-react";
 import { MemoryFrame, TimeScale } from "@/data/demoFrames";
+import AppHeader from "./AppHeader";
 import TimeScaleSwitcher from "./TimeScaleSwitcher";
 import MemoryTimeline from "./MemoryTimeline";
 import FrameDetailOverlay from "./FrameDetailOverlay";
@@ -27,11 +27,14 @@ type Props = {
   onFrameClick: (frame: MemoryFrame) => void;
   onFrameClose: () => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary">>) => void;
+  onUpdate: (id: string, changes: Partial<Pick<MemoryFrame, "content" | "tags" | "summary" | "tone" | "ai">>) => void;
   onRestore: (id: string) => void;
   onPermanentlyDelete: (id: string) => void;
   onBack: () => void;
+  onOpenDataManager: () => void;
+  onOpenReflection: () => void;
   onArchiveOpenChange?: (open: boolean) => void;
+  showToast: (message: string) => void;
 };
 
 export default memo(function FilmPage({
@@ -49,7 +52,10 @@ export default memo(function FilmPage({
   onRestore,
   onPermanentlyDelete,
   onBack,
+  onOpenDataManager,
+  onOpenReflection,
   onArchiveOpenChange,
+  showToast,
 }: Props) {
   const hasData =
     aggregatedData.type === "year"
@@ -71,33 +77,29 @@ export default memo(function FilmPage({
   return (
     <div className="flex flex-1 flex-col">
       {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -4 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-6 flex items-center justify-between"
+      <AppHeader
+        title="时间胶片"
+        onBack={onBack}
+        backLabel="返回记录室"
+        mobilePrimaryAction={<ArchivePanel frames={frames} onOpenChange={onArchiveOpenChange} />}
       >
         <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-sm tracking-wider text-text-muted/70 transition-colors hover:text-text-secondary"
+          onClick={onOpenDataManager}
+          className="whitespace-nowrap shrink-0 text-xs tracking-wider text-text-muted/40 hover:text-text-muted/70 transition-colors min-h-[44px] flex items-center"
         >
-          <ArrowLeft size={14} />
-          <span>返回记录室</span>
+          数据管理
         </button>
-        <div className="flex items-center gap-4 pr-4 sm:pr-12">
-          {deletedFrames.length > 0 && (
-            <RecycleBin
-              deletedFrames={deletedFrames}
-              onRestore={onRestore}
-              onPermanentlyDelete={onPermanentlyDelete}
-            />
-          )}
+        {deletedFrames.length > 0 && (
+          <RecycleBin
+            deletedFrames={deletedFrames}
+            onRestore={onRestore}
+            onPermanentlyDelete={onPermanentlyDelete}
+          />
+        )}
+        <div className="hidden sm:block">
           <ArchivePanel frames={frames} onOpenChange={onArchiveOpenChange} />
-          <span className="text-xs tracking-[0.15em] text-text-muted/50">
-            时间胶片
-          </span>
         </div>
-      </motion.header>
+      </AppHeader>
 
       {/* Time scale switcher */}
       <motion.div
@@ -108,6 +110,21 @@ export default memo(function FilmPage({
       >
         <TimeScaleSwitcher current={effectiveScale} onChange={onTimeScaleChange} totalFrameCount={totalFrameCount} />
       </motion.div>
+
+      <motion.button
+        initial={{ opacity: 0, y: -2 }}
+        animate={{ opacity: totalFrameCount >= 3 ? 0.48 : 0.24, y: 0 }}
+        transition={{ duration: 0.45, delay: 0.12 }}
+        onClick={totalFrameCount >= 3 ? onOpenReflection : undefined}
+        disabled={totalFrameCount < 3}
+        className="group mx-auto mb-7 flex min-h-[36px] items-center justify-center gap-3 px-4 font-serif text-xs tracking-[0.12em] text-text-muted transition-opacity hover:opacity-80 disabled:cursor-default disabled:hover:opacity-25"
+      >
+        <span className="h-px w-8 bg-gradient-to-r from-transparent to-border-soft opacity-35" />
+        <span className="transition-colors group-hover:text-text-secondary">
+          {totalFrameCount >= 3 ? "镜中似乎映出了些什么 →" : "再多几帧，镜中会浮出些什么"}
+        </span>
+        <span className="h-px w-8 bg-gradient-to-l from-transparent to-border-soft opacity-35" />
+      </motion.button>
 
       {/* Timeline or empty */}
       {hasData ? (
@@ -121,7 +138,7 @@ export default memo(function FilmPage({
       )}
 
       {/* Detail overlay */}
-      <FrameDetailOverlay frame={selectedFrame} onClose={onFrameClose} onDelete={onDelete} onUpdate={onUpdate} />
+      <FrameDetailOverlay frame={selectedFrame} onClose={onFrameClose} onDelete={onDelete} onUpdate={onUpdate} showToast={showToast} />
     </div>
   );
 });

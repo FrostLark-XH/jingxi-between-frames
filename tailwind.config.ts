@@ -45,7 +45,7 @@ const config: Config = {
           '"Noto Sans SC"',
           "sans-serif",
         ],
-        serif: ['var(--font-serif)', '"Noto Serif SC"', 'serif'],
+        serif: ['var(--font-serif)', 'serif'],
         mono: [
           '"SF Mono"',
           '"JetBrains Mono"',

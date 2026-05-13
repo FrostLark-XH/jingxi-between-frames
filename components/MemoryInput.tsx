@@ -3,7 +3,24 @@
 import { useRef, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { AlignJustify } from "lucide-react";
-import { formatText } from "@/lib/textFormat";
+
+function indentLines(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => {
+      if (line.length === 0) return line;
+      if (line.startsWith("　　")) return line;
+      return "　　" + line;
+    })
+    .join("\n");
+}
+
+function stripIndent(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => (line.startsWith("　　") ? line.slice(2) : line))
+    .join("\n");
+}
 
 type Props = {
   value: string;
@@ -12,11 +29,13 @@ type Props = {
   nextFrameNumber: number;
   isDeveloping?: boolean;
   onFocusChange?: (focused: boolean) => void;
+  showHint?: boolean;
 };
 
-export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, isDeveloping = false, onFocusChange }: Props) {
+export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, isDeveloping = false, onFocusChange, showHint = false }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [autoIndent, setAutoIndent] = useState(true);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.innerWidth >= 768) {
@@ -31,9 +50,15 @@ export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, 
     }
   };
 
-  const handleFormat = () => {
-    if (!value.trim()) return;
-    onChange(formatText(value));
+  const handleToggleIndent = () => {
+    setAutoIndent(!autoIndent);
+  };
+
+  const displayValue = autoIndent && value.trim() ? indentLines(value) : value;
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const raw = autoIndent ? stripIndent(e.target.value) : e.target.value;
+    onChange(raw);
   };
 
   const isFirstFrame = nextFrameNumber === 1;
@@ -55,25 +80,52 @@ export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, 
         )}
       </div>
 
+      {/* First-visit hint — gentle nudge toward the first frame */}
+      {showHint && !value.trim() && (
+        <motion.p
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.35, ease: [0.4, 0, 0.2, 1] }}
+          className="mb-3 text-center font-serif text-xs italic tracking-wider"
+          style={{ color: "color-mix(in srgb, var(--accent) 50%, var(--text-primary) 50%)" }}
+        >
+          把这一瞬留成一帧。
+        </motion.p>
+      )}
+
       {/* Input container */}
       <div className="relative">
+        {/* First-visit warm light — tiny safelight speck near the paper edge */}
+        {showHint && !value.trim() && (
+          <motion.div
+            className="pointer-events-none absolute z-10 rounded-full"
+            style={{
+              width: 5,
+              height: 5,
+              left: 8,
+              top: 12,
+              background: "var(--accent)",
+              filter: "blur(2.5px)",
+            }}
+            animate={{ opacity: [0.1, 0.28, 0.1] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+          />
+        )}
         {/* Textarea — stays fully visible; the developing feel comes from the light sweep + border glow */}
         <textarea
           ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          value={displayValue}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
           onFocus={() => onFocusChange?.(true)}
           onBlur={() => onFocusChange?.(false)}
           placeholder="今天，有什么被你记住了？"
           rows={5}
           className="w-full resize-none border border-border-subtle bg-bg-soft/60 px-5 py-5 text-base leading-relaxed text-text-primary placeholder:text-primary/12 transition-all duration-700 focus:border-accent/25 focus:bg-bg-soft/80 focus:outline-none rounded-card border-l border-l-border-warm"
+          data-developing={isDeveloping ? "true" : undefined}
           style={{
             minHeight: "35vh",
-            boxShadow: isDeveloping
-              ? "inset 0 0 60px var(--accent-glow), inset 0 1px 0 var(--surface-1)"
-              : "inset 0 0 40px var(--accent-glow), inset 0 1px 0 var(--surface-1)",
-            borderColor: isDeveloping ? "var(--accent-soft)" : undefined,
+            boxShadow: "inset 0 0 40px var(--accent-glow), inset 0 1px 0 var(--surface-1)",
           }}
         />
 
@@ -134,15 +186,16 @@ export default function MemoryInput({ value, onChange, onSave, nextFrameNumber, 
         )}
       </div>
 
-      {/* Character count + format button */}
+      {/* Character count + indent toggle */}
       {value.length > 0 && (
         <div className="mt-1.5 flex items-center justify-between">
           <button
-            onClick={handleFormat}
-            className="flex items-center gap-1 font-mono text-micro text-text-muted/30 transition-colors hover:text-text-muted/60"
+            onClick={handleToggleIndent}
+            className="flex items-center gap-1 font-mono text-micro transition-colors"
+            style={{ color: autoIndent ? "var(--accent-soft)" : "color-mix(in srgb, var(--text-primary) 30%, transparent)" }}
           >
             <AlignJustify size={10} />
-            缩进
+            首行缩进
           </button>
           <span className="font-mono text-micro text-text-muted/25">
             {value.length} 字

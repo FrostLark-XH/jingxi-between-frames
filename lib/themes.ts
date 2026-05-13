@@ -3,7 +3,13 @@
 // are all derived via color-mix() in globals.css, ensuring every theme
 // automatically gets surfaces tinted by its accent color.
 
-export type ThemeId = "mist-darkroom" | "dusk-bean" | "morning-grey";
+export type ThemeId =
+  | "mist-darkroom"
+  | "dusk-bean"
+  | "morning-grey"
+  | "moon-cyan"
+  | "forest-film"
+  | "silver-halide";
 
 export type ThemeTokens = {
   id: ThemeId;
@@ -93,44 +99,111 @@ const morningGrey: ThemeTokens = {
   },
 };
 
+// ── Theme D: 冷月蓝片 ─────────────────────────────────────────────────
+// Night-blue gelatin print. Cool, quiet, a little spectral.
+
+const moonCyan: ThemeTokens = {
+  id: "moon-cyan",
+  name: "冷月蓝片",
+  bgBase: "#101822",
+  bgSoft: "#162231",
+  accent: "#78AFC8",
+  accentSoft: "#527F96",
+  accentGlow: "rgba(82,127,150,0.28)",
+  textPrimary: "#E8F0F2",
+  statusError: "#C07482",
+  shader: {
+    glowColor1: [0.25, 0.46, 0.58],
+    glowColor2: [0.18, 0.32, 0.42],
+    glowIntensity: 0.028,
+    grainOpacity: 0.026,
+    bgBase: [0.063, 0.094, 0.133],
+  },
+};
+
+// ── Theme E: 苔影暗房 ─────────────────────────────────────────────────
+// Deep green chemical bath. Muted and organic, but still photographic.
+
+const forestFilm: ThemeTokens = {
+  id: "forest-film",
+  name: "苔影暗房",
+  bgBase: "#111A16",
+  bgSoft: "#17251F",
+  accent: "#8FAE78",
+  accentSoft: "#688856",
+  accentGlow: "rgba(104,136,86,0.27)",
+  textPrimary: "#EEF0E7",
+  statusError: "#BE7468",
+  shader: {
+    glowColor1: [0.31, 0.43, 0.24],
+    glowColor2: [0.18, 0.30, 0.18],
+    glowIntensity: 0.025,
+    grainOpacity: 0.030,
+    bgBase: [0.067, 0.102, 0.086],
+  },
+};
+
+// ── Theme F: 银盐黑白 ─────────────────────────────────────────────────
+// Monochrome silver-halide print. Low saturation, high restraint.
+
+const silverHalide: ThemeTokens = {
+  id: "silver-halide",
+  name: "银盐黑白",
+  bgBase: "#141414",
+  bgSoft: "#1D1D1C",
+  accent: "#A9A9A0",
+  accentSoft: "#73746E",
+  accentGlow: "rgba(169,169,160,0.18)",
+  textPrimary: "#EFEDE6",
+  statusError: "#B97070",
+  shader: {
+    glowColor1: [0.42, 0.42, 0.38],
+    glowColor2: [0.22, 0.22, 0.20],
+    glowIntensity: 0.014,
+    grainOpacity: 0.035,
+    bgBase: [0.078, 0.078, 0.078],
+  },
+};
+
 // ── Theme map ────────────────────────────────────────────────────────────
 
 export const themes: Record<ThemeId, ThemeTokens> = {
   "mist-darkroom": mistDarkroom,
   "dusk-bean": duskBean,
   "morning-grey": morningGrey,
+  "moon-cyan": moonCyan,
+  "forest-film": forestFilm,
+  "silver-halide": silverHalide,
 };
 
-export const themeList: ThemeTokens[] = [mistDarkroom, duskBean, morningGrey];
+export const themeList: ThemeTokens[] = [
+  mistDarkroom,
+  duskBean,
+  morningGrey,
+  moonCyan,
+  forestFilm,
+  silverHalide,
+];
 
 export const DEFAULT_THEME: ThemeId = "mist-darkroom";
 
-// ── Apply theme to CSS variables ─────────────────────────────────────────
-// Only sets base values. All surfaces/borders/text variants are derived
-// from these via color-mix() in globals.css.
+// ── Old → new theme name migration ────────────────────────────────────
+// Users who set themes before the rename may have stale keys in localStorage.
+export const THEME_MIGRATION: Record<string, ThemeId> = {
+  darkroom: "mist-darkroom",
+  "warm-paper": "dusk-bean",
+  "morning-paper": "morning-grey",
+  "dusk-paper": "dusk-bean",
+};
 
-function hexToRgb(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r} ${g} ${b}`;
-}
+// ── Apply theme to document ────────────────────────────────────────────
+// Only sets data-theme attribute and color-scheme.
+// All CSS variables are handled by [data-theme] selectors in globals.css —
+// this keeps a single source of truth and prevents inline-style override races.
 
 export function applyThemeToDocument(theme: ThemeTokens): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  root.style.setProperty("--bg-base", theme.bgBase);
-  root.style.setProperty("--bg-soft", theme.bgSoft);
-  root.style.setProperty("--accent", theme.accent);
-  root.style.setProperty("--accent-soft", theme.accentSoft);
-  root.style.setProperty("--accent-glow", theme.accentGlow);
-  root.style.setProperty("--text-primary", theme.textPrimary);
-  root.style.setProperty("--status-error", theme.statusError);
-
-  // RGB variants for Tailwind opacity modifier compatibility
-  root.style.setProperty("--bg-base-rgb", hexToRgb(theme.bgBase));
-  root.style.setProperty("--bg-soft-rgb", hexToRgb(theme.bgSoft));
-  root.style.setProperty("--accent-rgb", hexToRgb(theme.accent));
-  root.style.setProperty("--text-primary-rgb", hexToRgb(theme.textPrimary));
-  root.style.setProperty("--status-error-rgb", hexToRgb(theme.statusError));
+  root.setAttribute("data-theme", theme.id);
+  root.style.colorScheme = theme.id === "morning-grey" ? "light" : "dark";
 }

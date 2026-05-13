@@ -29,7 +29,7 @@ export default function ThemeSwitcher() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.96 }}
               transition={{ duration: 0.2 }}
-              className="absolute right-0 top-8 z-50 w-36 overflow-hidden border border-border-subtle py-1 rounded-card bg-bg-soft"
+              className="absolute right-0 top-8 z-50 w-40 overflow-hidden border border-border-subtle py-1 rounded-card bg-bg-soft"
             >
               {themeList.map((t) => (
                 <button
@@ -38,14 +38,14 @@ export default function ThemeSwitcher() {
                     setThemeId(t.id as ThemeId);
                     setOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs tracking-wider transition-colors hover:bg-surface-2"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs tracking-wider transition-colors hover:bg-surface-2"
                   style={{
                     color: themeId === t.id ? "var(--accent)" : "var(--text-muted)",
                   }}
                 >
                   <span
                     className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                    style={{ background: "var(--accent)" }}
+                    style={{ background: t.accent }}
                   />
                   {t.name}
                 </button>

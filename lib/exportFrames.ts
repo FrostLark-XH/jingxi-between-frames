@@ -2,8 +2,12 @@
 // Three formats: JSON (machine-readable, full MemoryFrame),
 // Markdown (human-readable, grouped by date),
 // TXT (chronological, minimal).
+//
+// 文本来源：导出始终使用 rawContent ?? content，排版修饰由 formatExportText 在导出阶段派生，
+// 不写回 frame.content / frame.rawContent。
 
 import { MemoryFrame } from "@/data/demoFrames";
+import { formatExportText } from "@/src/domain/frame/textFormat";
 
 export type ExportOptions = {
   content: boolean;
@@ -13,10 +17,28 @@ export type ExportOptions = {
 
 function getDateStamp(): string {
   const now = new Date();
-  return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function getExportFilename(ext: string, frames: MemoryFrame[]): string {
+  if (frames.length === 1) {
+    const f = frames[0];
+    const time = f.time.replace(":", "");
+    return `jingxi-frame-${f.date}-${time}.${ext}`;
+  }
+  return `jingxi-archive-${getDateStamp()}.${ext}`;
+}
+
+/** 导出正文来源：优先 rawContent，fallback 到 content */
+function getExportText(f: MemoryFrame): string {
+  return (f.rawContent || f.content).trim();
 }
 
 function triggerDownload(filename: string, content: string, mime: string, addBOM = false) {
+  if (!content.trim()) {
+    throw new Error("导出内容为空，请检查记录是否包含文字。");
+  }
+
   const bom = addBOM ? "﻿" : "";
   const blob = new Blob([bom + content], { type: mime });
 
@@ -60,26 +82,39 @@ function pad(n: number): string {
   return n.toString().padStart(2, "0");
 }
 
-// ── JSON export ────────────────────────────────────────────────────────────
+// ── JSON export — 完整 MemoryFrame 数据 ─────────────────────────────────────
 
 export function toJSON(frames: MemoryFrame[], opts: ExportOptions = { content: true, tags: true, summary: true }) {
   const data = frames.map((f) => {
     const out: Record<string, unknown> = {};
-    if (opts.content) {
-      out.content = f.content;
-      out.date = f.date;
-      out.time = f.time;
-      out.frameIndex = f.frameIndex;
-      out.wordCount = f.wordCount;
-    }
+    // Core
+    out.id = f.id;
+    out.date = f.date;
+    out.time = f.time;
+    out.frameIndex = f.frameIndex;
+    out.wordCount = f.wordCount;
+    out.type = f.type;
+    out.createdAt = f.createdAt;
+    out.updatedAt = f.updatedAt;
+    // Content — always include rawContent, optionally content
+    out.rawContent = f.rawContent;
+    if (opts.content) out.content = f.content;
+    // AI — optional per export options
     if (opts.tags) out.tags = f.tags;
     if (opts.summary) out.summary = f.summary;
-    out.id = f.id;
-    out.createdAt = f.createdAt;
+    if (f.tone) out.tone = f.tone;
+    if (f.ai) out.ai = f.ai;
+    if (f.developed) out.developed = f.developed;
+    // Lifecycle
+    out.frameStatus = f.frameStatus;
+    out.developStatus = f.developStatus;
+    out.status = f.status; // deprecated but kept for compat
+    if (f.deletedAt) out.deletedAt = f.deletedAt;
+    if (f.keywords?.length) out.keywords = f.keywords; // deprecated but kept for old data
     return out;
   });
   const json = JSON.stringify(data, null, 2);
-  triggerDownload(`jingxi_archive_${getDateStamp()}.json`, json, "application/json;charset=utf-8");
+  triggerDownload(getExportFilename("json", frames), json, "application/json;charset=utf-8", true);
 }
 
 // ── Markdown export ────────────────────────────────────────────────────────
@@ -104,12 +139,12 @@ export function toMarkdown(frames: MemoryFrame[], opts: ExportOptions = { conten
 
     for (const f of dayFrames) {
       // Frame header with index badge
-      lines.push(`### 第 ${pad(f.frameIndex)} 帧　\`${f.time}\``);
+      lines.push(`### 第 ${pad(f.frameIndex)} 帧  \`${f.time}\``);
       lines.push("");
 
       // Status badge
       const statusLabel = f.status === "saved" ? "已保存" : f.status === "organizing" ? "整理中" : "显影中";
-      lines.push(`> 状态：${statusLabel}　|　${f.wordCount} 字`);
+      lines.push(`> 状态：${statusLabel}  |  ${f.wordCount} 字`);
 
       // Tags on same metadata line
       if (opts.tags && f.tags.length > 0) {
@@ -123,10 +158,14 @@ export function toMarkdown(frames: MemoryFrame[], opts: ExportOptions = { conten
 
       lines.push("");
 
-      // Content block
+      // Content block — source: rawContent ?? content, formatted at export time
       if (opts.content) {
-        lines.push(f.content);
-        lines.push("");
+        const raw = getExportText(f);
+        if (raw) {
+          const formatted = formatExportText(raw, { trimExtraBlankLines: true, paragraphSpacing: "comfortable" });
+          lines.push(formatted);
+          lines.push("");
+        }
       }
 
       lines.push("---");
@@ -134,7 +173,7 @@ export function toMarkdown(frames: MemoryFrame[], opts: ExportOptions = { conten
     }
   }
 
-  triggerDownload(`jingxi_archive_${getDateStamp()}.md`, lines.join("\n"), "text/markdown;charset=utf-8");
+  triggerDownload(getExportFilename("md", frames), lines.join("\n"), "text/markdown;charset=utf-8", true);
 }
 
 // ── TXT export ─────────────────────────────────────────────────────────────
@@ -157,8 +196,8 @@ export function toTXT(frames: MemoryFrame[], opts: ExportOptions = { content: tr
 
     // Frame header
     lines.push(`┌─ 第 ${pad(f.frameIndex)} 帧 ──────────────────────────`);
-    lines.push(`│ ${f.date}　${f.time}`);
-    lines.push(`│ 状态：${f.status === "saved" ? "已保存" : f.status === "organizing" ? "整理中" : "显影中"}　|　${f.wordCount} 字`);
+    lines.push(`│ ${f.date}  ${f.time}`);
+    lines.push(`│ 状态：${f.status === "saved" ? "已保存" : f.status === "organizing" ? "整理中" : "显影中"}  |  ${f.wordCount} 字`);
     if (opts.tags && f.tags.length > 0) {
       lines.push(`│ 标签：${f.tags.join(" · ")}`);
     }
@@ -167,11 +206,15 @@ export function toTXT(frames: MemoryFrame[], opts: ExportOptions = { content: tr
     }
     lines.push("│");
 
-    // Content
+    // Content — source: rawContent ?? content, formatted at export time
     if (opts.content) {
-      const contentLines = f.content.split("\n");
-      for (const cl of contentLines) {
-        lines.push(`│ ${cl}`);
+      const raw = getExportText(f);
+      if (raw) {
+        const formatted = formatExportText(raw, { trimExtraBlankLines: true, paragraphSpacing: "comfortable" });
+        const contentLines = formatted.split("\n");
+        for (const cl of contentLines) {
+          lines.push(`│ ${cl}`);
+        }
       }
       lines.push("│");
     }
@@ -186,5 +229,5 @@ export function toTXT(frames: MemoryFrame[], opts: ExportOptions = { content: tr
   lines.push("");
   lines.push("═══════════════════════════════════════");
 
-  triggerDownload(`jingxi_archive_${getDateStamp()}.txt`, lines.join("\n"), "text/plain;charset=utf-8", true);
+  triggerDownload(getExportFilename("txt", frames), lines.join("\n"), "text/plain;charset=utf-8", true);
 }

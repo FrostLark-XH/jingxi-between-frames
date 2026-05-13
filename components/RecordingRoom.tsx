@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { MemoryFrame } from "@/data/demoFrames";
+import { createFrame } from "@/src/domain/frame/createFrame";
+import { contentHash } from "@/services/ai/types";
 import { getAiProvider } from "@/services/ai";
+import { track } from "@/lib/analytics";
+import { createSafeId } from "@/src/lib/id/createSafeId";
 import useIsMobile from "@/hooks/useIsMobile";
+import useFirstVisitHint from "@/hooks/useFirstVisitHint";
 import MemoryInput from "./MemoryInput";
 import ActionBar from "./ActionBar";
 
@@ -14,17 +19,32 @@ type Props = {
   onDraftChange: (text: string) => void;
   onDraftClear: () => void;
   onSave: (frame: MemoryFrame) => void;
+  onUpdateFrame: (id: string, changes: Partial<Pick<MemoryFrame, "summary" | "tags" | "tone" | "ai">>) => void;
   onViewFilm: () => void;
+  onOpenDataManager: () => void;
   todayFrameCount: number;
   nextFrameIndex: number;
   showToast: (message: string) => void;
+  frames: MemoryFrame[];
 };
 
-export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, onSave, onViewFilm, todayFrameCount, nextFrameIndex, showToast }: Props) {
+export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, onSave, onUpdateFrame, onViewFilm, onOpenDataManager, todayFrameCount, nextFrameIndex, showToast, frames }: Props) {
   const [isDeveloping, setIsDeveloping] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const framesRef = useRef(frames);
+  framesRef.current = frames;
   const isMobile = useIsMobile();
+  const { isFirstVisit, completeFirstVisit } = useFirstVisitHint();
+
+  // Auto-complete first visit when user starts typing
+  useEffect(() => {
+    if (isFirstVisit && draftText.trim().length > 0) {
+      completeFirstVisit();
+    }
+  }, [draftText, isFirstVisit, completeFirstVisit]);
+
+  const showHint = isFirstVisit && !draftText.trim();
 
   // Track iOS keyboard height via Visual Viewport API so the sticky bar
   // sits above the keyboard instead of behind it.
@@ -49,45 +69,104 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
   }, [isMobile]);
 
   const handleSave = async () => {
-    const trimmed = draftText.trim();
-    if (!trimmed) {
+    if (!draftText.trim()) {
       showToast("先写下些什么吧");
       return;
     }
     if (isDeveloping) return;
 
     setIsDeveloping(true);
+    const content = draftText;
+    const hash = contentHash(content);
+    const requestId = createSafeId("develop");
 
-    // Developing animation plays ~700ms; save at 650ms so the settle phase
-    // overlaps naturally with the view transition.
+    // Save immediately at 650ms (animation settle point), then run AI in background
     setTimeout(async () => {
-      const now = new Date();
-      const iso = now.toISOString();
-      const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")}`;
-      const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-      const wordCount = trimmed.length;
+      let frameWithAi: MemoryFrame;
 
-      const provider = getAiProvider();
-      const { summary, tags } = await provider.processFrame({ content: trimmed });
+      try {
+        const frame = createFrame({ content, frameIndex: nextFrameIndex });
+        frameWithAi = {
+          ...frame,
+          ai: {
+            provider: "mock" as const,
+            generatedAt: new Date().toISOString(),
+            version: "v0.7",
+            contentHash: hash,
+            requestId,
+            requestedAt: new Date().toISOString(),
+          },
+        };
 
-      const frame: MemoryFrame = {
-        id: `frame-${Date.now()}`,
-        content: trimmed,
-        preview: trimmed.length > 100 ? trimmed.substring(0, 100) + "…" : trimmed,
-        date: dateStr,
-        time: timeStr,
-        frameIndex: nextFrameIndex,
-        summary,
-        tags,
-        wordCount,
-        type: "text",
-        status: "saved",
-        createdAt: iso,
-        updatedAt: iso,
+        onSave(frameWithAi);
+      } catch {
+        setIsDeveloping(false);
+        showToast("保存失败，请重试");
+        return;
+      }
+
+      setIsDeveloping(false);
+
+      // Per-frame guard: uses ref to always read latest frames state
+      const isFrameValid = (id: string, reqId: string): boolean => {
+        const current = framesRef.current.find((f) => f.id === id);
+        if (!current) return false;
+        if (current.deletedAt) return false;
+        if (current.ai?.requestId && current.ai.requestId !== reqId) return false;
+        return true;
       };
 
-      onSave(frame);
-      setIsDeveloping(false);
+      // Background AI — never blocks the save
+      try {
+        const res = await fetch("/api/ai/develop-frame", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content, createdAt: frameWithAi.createdAt }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (!isFrameValid(frameWithAi.id, requestId)) return;
+          track("frame_developed");
+          onUpdateFrame(frameWithAi.id, {
+            summary: data.summary || "",
+            tags: data.tags || [],
+            tone: data.tone || "平静",
+            ai: {
+              provider: data.provider || "mock",
+              model: data.model,
+              generatedAt: new Date().toISOString(),
+              version: "v0.7",
+              contentHash: hash,
+              requestId,
+              requestedAt: frameWithAi.ai?.requestedAt,
+              completedAt: new Date().toISOString(),
+            },
+          });
+          return;
+        }
+      } catch { /* fall through to mock */ }
+
+      // Mock fallback in background
+      if (!isFrameValid(frameWithAi.id, requestId)) return;
+      try {
+        const provider = getAiProvider();
+        const mockResult = await provider.processFrame({ content });
+        onUpdateFrame(frameWithAi.id, {
+          summary: mockResult.summary || "",
+          tags: mockResult.tags || [],
+          tone: mockResult.tone || "平静",
+          ai: {
+            provider: "mock",
+            generatedAt: new Date().toISOString(),
+            version: "v0.7",
+            contentHash: hash,
+            requestId,
+            requestedAt: frameWithAi.ai?.requestedAt,
+            completedAt: new Date().toISOString(),
+            fallbackUsed: true,
+          },
+        });
+      } catch { /* silent — frame is already saved */ }
     }, 650);
   };
 
@@ -102,28 +181,37 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
 
   const showStickyBar = isMobile && (draftText.trim().length > 0 || isDeveloping);
 
+  // Entrance animation: full stagger on first visit, instant on return
+  const fadeUp = (delay: number) =>
+    isFirstVisit
+      ? {
+          initial: { opacity: 0, y: 8 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.6, delay, ease: [0.4, 0, 0.2, 1] as const },
+        }
+      : { initial: false as const, animate: { opacity: 1, y: 0 } };
+
   return (
     <div className="flex flex-1 flex-col" onClick={handleContainerClick}>
       {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -4 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-        className="mb-12 mt-6 text-center"
-      >
-        <h1 className="font-serif text-xl font-medium tracking-widest text-text-primary">
+      <header className="mb-12 mt-6 text-center">
+        <motion.h1
+          {...fadeUp(0)}
+          className="font-serif text-xl font-medium tracking-widest text-text-primary"
+        >
           镜隙之间
-        </h1>
-        <p className="mt-2 font-serif text-xs italic tracking-wide text-text-muted">
+        </motion.h1>
+        <motion.p
+          {...fadeUp(0.12)}
+          className="mt-2 font-serif text-xs italic tracking-wide text-text-muted"
+        >
           让时间慢慢显影
-        </p>
-      </motion.header>
+        </motion.p>
+      </header>
 
       {/* Memory input — the main visual */}
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.0, delay: 0.2, ease: [0.4, 0, 0.2, 1] }}
+        {...fadeUp(0.28)}
         className="mb-6"
       >
         <MemoryInput
@@ -133,38 +221,45 @@ export default function RecordingRoom({ draftText, onDraftChange, onDraftClear, 
           nextFrameNumber={nextFrameIndex}
           isDeveloping={isDeveloping}
           onFocusChange={setIsFocused}
+          showHint={showHint}
         />
       </motion.div>
 
       {/* Film archive entry — fades when typing or focused */}
       <motion.button
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.4 }}
+        {...fadeUp(0.5)}
         onClick={onViewFilm}
-        className="mb-4 flex items-center justify-center gap-0.5 text-xs tracking-wider transition-all duration-300 hover:text-text-muted/60"
+        className="mb-4 flex items-center justify-center gap-0.5 text-xs tracking-wider max-w-full min-w-0 transition-all duration-300 hover:text-text-muted/60"
         style={{
           color: (draftText.trim() || isFocused)
             ? "color-mix(in srgb, var(--text-primary) 12%, transparent)"
             : "color-mix(in srgb, var(--text-primary) 25%, transparent)",
-          pointerEvents: isFocused ? "none" : "auto",
+          pointerEvents: isFocused && !isMobile ? "none" : "auto",
         }}
       >
-        查看时间胶片
+        <span className="truncate">查看时间胶片</span>
         {todayFrameCount > 0 && (
-          <span className="ml-1">
+          <span className="shrink-0">
             · 今日 {todayFrameCount} 帧
           </span>
         )}
-        <ChevronRight size={11} />
+        <ChevronRight size={11} className="shrink-0" />
+      </motion.button>
+
+      {/* Data management entry */}
+      <motion.button
+        {...fadeUp(0.55)}
+        onClick={onOpenDataManager}
+        className="mb-4 flex items-center justify-center text-xs tracking-wider max-w-full transition-colors duration-300 hover:text-text-muted/60"
+        style={{ color: "color-mix(in srgb, var(--text-primary) 14%, transparent)" }}
+      >
+        数据管理
       </motion.button>
 
       {/* Action bar — desktop only, mobile uses sticky bar */}
       {!isMobile && (
         <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          {...fadeUp(0.48)}
           className="mb-6"
         >
           <ActionBar text={draftText} onSave={handleSave} isDeveloping={isDeveloping} />

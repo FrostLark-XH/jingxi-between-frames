@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Archive, X, FileJson, FileText, File, Check, Download } from "lucide-react";
-import { MemoryFrame } from "@/data/demoFrames";
+import { Archive, X, FileJson, FileText, File as FileIcon, Check, Download, Image } from "lucide-react";
+import { MemoryFrame, formatFrameNumber } from "@/data/demoFrames";
 import { toJSON, toMarkdown, toTXT, type ExportOptions } from "@/lib/exportFrames";
+import { downloadBlob, shareBlob, canShare } from "@/lib/exportImage";
+import { useTheme } from "@/hooks/useTheme";
+import { track } from "@/lib/analytics";
+import FrameImageExport, { ImageExportHandle } from "./FrameImageExport";
+import FrameCollectionImageExport, { CollectionExportHandle } from "./FrameCollectionImageExport";
+import StatusToast from "./StatusToast";
 
 type Props = {
   frames: MemoryFrame[];
@@ -24,7 +31,7 @@ function groupByDate(frames: MemoryFrame[]): Map<string, MemoryFrame[]> {
 const EXPORT_BTNS = [
   { label: "JSON", icon: <FileJson size={10} />, fn: toJSON },
   { label: "MD", icon: <FileText size={10} />, fn: toMarkdown },
-  { label: "TXT", icon: <File size={10} />, fn: toTXT },
+  { label: "TXT", icon: <FileIcon size={10} />, fn: toTXT },
 ];
 
 const OPTION_LABELS: { key: keyof ExportOptions; label: string }[] = [
@@ -37,6 +44,36 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
   const [open, setOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [exportOpts, setExportOpts] = useState<ExportOptions>({ content: true, tags: true, summary: true });
+  const [exportingImage, setExportingImage] = useState(false);
+  const [sharingImage, setSharingImage] = useState(false);
+  const [exportingCollection, setExportingCollection] = useState(false);
+  const [sharingCollection, setSharingCollection] = useState(false);
+  const [exportingAllImage, setExportingAllImage] = useState(false);
+  const [sharingAllImage, setSharingAllImage] = useState(false);
+  const [confirmingFormat, setConfirmingFormat] = useState<string | null>(null);
+  const [overviewConfirming, setOverviewConfirming] = useState<string | null>(null);
+  const [textExporting, setTextExporting] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const exportRef = useRef<ImageExportHandle>(null);
+  const collectionRef = useRef<CollectionExportHandle>(null);
+  const overviewSingleRef = useRef<ImageExportHandle>(null);
+  const overviewCollectionRef = useRef<CollectionExportHandle>(null);
+  const { themeId } = useTheme();
+
+  const MAX_COLLECTION_FRAMES = 8;
+
+  const showToast = (msg: string, duration = 3000) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(msg);
+    toastTimerRef.current = setTimeout(() => setToast(null), duration);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const toggleOption = (key: keyof ExportOptions) => {
     setExportOpts((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -83,6 +120,164 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
     setSelectedIds(next);
   };
 
+  const singleFrame = selectedIds.size === 1 ? frames.find((f) => selectedIds.has(f.id)) ?? null : null;
+  const collectionFrames = selectedFrames;
+
+  const handleFormatClick = (label: string, fn: (fs: MemoryFrame[], opts: ExportOptions) => void, fs: MemoryFrame[]) => {
+    if (confirmingFormat === label) {
+      if (textExporting) return;
+      setTextExporting(true);
+      try {
+        fn(fs, exportOpts);
+        showToast("已导出");
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : "导出失败，请重试", 4000);
+      } finally {
+        setTextExporting(false);
+        setConfirmingFormat(null);
+      }
+    } else {
+      setConfirmingFormat(label);
+    }
+  };
+
+  const handleOverviewFormatClick = (label: string, fn: (fs: MemoryFrame[], opts: ExportOptions) => void) => {
+    if (overviewConfirming === label) {
+      if (textExporting) return;
+      setTextExporting(true);
+      try {
+        fn(frames, exportOpts);
+        showToast("已导出");
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : "导出失败，请重试", 4000);
+      } finally {
+        setTextExporting(false);
+        setOverviewConfirming(null);
+      }
+    } else {
+      setOverviewConfirming(label);
+    }
+  };
+
+  const getSingleFilename = (f: MemoryFrame) =>
+    `jingxi-frame-${f.date}-${f.time.replace(":", "")}-${themeId}-${Date.now()}.png`;
+
+  const handleSaveImage = async () => {
+    if (!singleFrame || exportingImage || !exportRef.current) return;
+    setExportingImage(true);
+    try {
+      const blob = await exportRef.current.renderToBlob();
+      downloadBlob(blob, getSingleFilename(singleFrame));
+      track("png_exported");
+      showToast("已保存 PNG");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "PNG 导出失败，请重试", 4000);
+    } finally {
+      setExportingImage(false);
+    }
+  };
+
+  const handleShareImage = async () => {
+    if (!singleFrame || sharingImage || !exportRef.current) return;
+    setSharingImage(true);
+    try {
+      const blob = await exportRef.current.renderToBlob();
+      await shareBlob(blob, getSingleFilename(singleFrame));
+      showToast("已分享");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "分享失败，请重试", 4000);
+    } finally {
+      setSharingImage(false);
+    }
+  };
+
+  const handleSaveCollection = async () => {
+    if (collectionFrames.length === 0 || exportingCollection || !collectionRef.current) return;
+    if (collectionFrames.length > MAX_COLLECTION_FRAMES) return;
+    setExportingCollection(true);
+    try {
+      const blob = await collectionRef.current.renderToBlob();
+      downloadBlob(blob, `jingxi-archive-${collectionFrames[0].date}-${themeId}-${Date.now()}.png`);
+      track("png_exported");
+      showToast("已保存长图");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "长图导出失败，请重试", 4000);
+    } finally {
+      setExportingCollection(false);
+    }
+  };
+
+  const handleShareCollection = async () => {
+    if (collectionFrames.length === 0 || sharingCollection || !collectionRef.current) return;
+    if (collectionFrames.length > MAX_COLLECTION_FRAMES) return;
+    setSharingCollection(true);
+    try {
+      const blob = await collectionRef.current.renderToBlob();
+      await shareBlob(blob, `jingxi-archive-${collectionFrames[0].date}-${themeId}-${Date.now()}.png`);
+      showToast("已分享");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "分享失败，请重试", 4000);
+    } finally {
+      setSharingCollection(false);
+    }
+  };
+
+  const handleSaveAllImage = async () => {
+    if (frames.length === 0 || exportingAllImage) return;
+    if (frames.length === 1 && overviewSingleRef.current) {
+      setExportingAllImage(true);
+      try {
+        const blob = await overviewSingleRef.current.renderToBlob();
+        downloadBlob(blob, getSingleFilename(frames[0]));
+        track("png_exported");
+        showToast("已保存 PNG");
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : "PNG 导出失败，请重试", 4000);
+      } finally {
+        setExportingAllImage(false);
+      }
+    } else if (frames.length <= MAX_COLLECTION_FRAMES && overviewCollectionRef.current) {
+      setExportingAllImage(true);
+      try {
+        const blob = await overviewCollectionRef.current.renderToBlob();
+        downloadBlob(blob, `jingxi-archive-${frames[0].date}-${themeId}-${Date.now()}.png`);
+        track("png_exported");
+        showToast("已保存长图");
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : "长图导出失败，请重试", 4000);
+      } finally {
+        setExportingAllImage(false);
+      }
+    }
+  };
+
+  const handleShareAllImage = async () => {
+    if (frames.length === 0 || sharingAllImage) return;
+    if (frames.length === 1 && overviewSingleRef.current) {
+      setSharingAllImage(true);
+      try {
+        const blob = await overviewSingleRef.current.renderToBlob();
+        await shareBlob(blob, getSingleFilename(frames[0]));
+        showToast("已分享");
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : "分享失败，请重试", 4000);
+      } finally {
+        setSharingAllImage(false);
+      }
+    } else if (frames.length <= MAX_COLLECTION_FRAMES && overviewCollectionRef.current) {
+      setSharingAllImage(true);
+      try {
+        const blob = await overviewCollectionRef.current.renderToBlob();
+        await shareBlob(blob, `jingxi-archive-${frames[0].date}-${themeId}-${Date.now()}.png`);
+        showToast("已分享");
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : "分享失败，请重试", 4000);
+      } finally {
+        setSharingAllImage(false);
+      }
+    }
+  };
+
   return (
     <>
       {/* Trigger */}
@@ -91,13 +286,16 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
         className="flex items-center gap-1.5 text-sm tracking-wider text-text-muted/50 transition-colors hover:text-text-muted/80"
       >
         <Archive size={14} />
-        <span className="hidden sm:inline">档案</span>
+        <span>档案</span>
       </button>
 
-      {/* Overlay + Panel */}
-      <AnimatePresence>
-        {open && (
-          <>
+      {typeof document !== "undefined" && createPortal(
+        <>
+          {/* Overlay + Panel */}
+          <div data-archive-panel-layer>
+            <AnimatePresence>
+            {open && (
+              <>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -113,7 +311,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              className="fixed right-0 top-0 z-[60] flex h-full w-full max-w-[360px] flex-col border-l border-border-soft bg-bg-base shadow-2xl"
+              className="fixed inset-y-0 right-0 z-[60] flex h-dvh w-full max-w-full flex-col overflow-hidden border-l border-border-soft bg-bg-base shadow-2xl sm:max-w-[360px]"
             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-border-soft px-5 py-4">
@@ -130,6 +328,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
               <div className="flex items-center justify-between border-b border-border-soft px-5 py-3">
                 <button
                   onClick={toggleAll}
+                  data-testid="archive-select-all"
                   className="flex items-center gap-2 text-xs text-text-muted transition-colors hover:text-text-secondary"
                 >
                   <span
@@ -151,7 +350,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
 
               {/* Scrollable content */}
               <div
-                className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4"
+                className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-4 sm:px-5"
                 style={{ WebkitOverflowScrolling: "touch" }}
               >
                 {frames.length === 0 ? (
@@ -159,7 +358,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                 ) : (
                   <>
                     {/* ── All records overview ── */}
-                    <div className="mb-4 border border-border-soft pb-3 rounded-button bg-surface-1">
+                    <div className="mb-4 overflow-hidden rounded-button border border-border-soft bg-surface-1 pb-3">
                       <div className="px-4 pt-3 pb-2">
                         <h3 className="text-sm font-medium tracking-wider text-text-secondary">全部记录</h3>
                         <p className="mt-1 text-xs text-text-muted/60">
@@ -167,7 +366,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                         </p>
                       </div>
                       {/* Export content options */}
-                      <div className="mb-2 flex items-center gap-3 px-4">
+                      <div className="mb-2 flex flex-wrap items-center gap-3 px-4">
                         {OPTION_LABELS.map(({ key, label }) => (
                           <button
                             key={key}
@@ -188,17 +387,41 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                           </button>
                         ))}
                       </div>
-                      <div className="flex gap-1.5 px-4">
+                      <div className="flex flex-wrap gap-1 px-4">
                         {EXPORT_BTNS.map(({ label, icon, fn }) => (
                           <button
                             key={label}
-                            onClick={() => fn(frames, exportOpts)}
-                            className="flex items-center gap-1 rounded border border-border-soft bg-bg-base px-2.5 py-1 text-micro text-text-muted transition-colors hover:border-accent/20 hover:text-text-secondary"
+                            data-testid={`archive-overview-export-${label.toLowerCase()}`}
+                            onClick={() => handleOverviewFormatClick(label, fn)}
+                            disabled={textExporting}
+                            className={`flex min-w-0 items-center gap-1 rounded border px-1.5 py-0.5 text-micro transition-colors ${
+                              overviewConfirming === label
+                                ? "border-accent/40 bg-accent/15 text-accent"
+                                : "border-border-soft bg-bg-base text-text-muted hover:border-accent/20 hover:text-text-secondary"
+                            } disabled:opacity-40`}
                           >
-                            {icon}
-                            {label}
+                            {overviewConfirming === label ? `导出为 ${label}？` : label}
                           </button>
                         ))}
+                        <button
+                          onClick={handleSaveAllImage}
+                          disabled={exportingAllImage || frames.length === 0 || frames.length > MAX_COLLECTION_FRAMES}
+                          title={frames.length > MAX_COLLECTION_FRAMES ? `长图导出最多支持 ${MAX_COLLECTION_FRAMES} 帧` : undefined}
+                          className="flex min-w-0 items-center gap-1 rounded border border-accent/20 bg-accent/5 px-1.5 py-0.5 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-30"
+                        >
+                          <Image size={10} />
+                          {exportingAllImage ? "保存中…" : frames.length > MAX_COLLECTION_FRAMES ? `≤${MAX_COLLECTION_FRAMES}帧` : "保存 PNG"}
+                        </button>
+                        {canShare() && !(frames.length > MAX_COLLECTION_FRAMES) && (
+                          <button
+                            onClick={handleShareAllImage}
+                            disabled={sharingAllImage || frames.length === 0}
+                            className="flex min-w-0 items-center gap-1 rounded border border-accent/20 bg-accent/5 px-1.5 py-0.5 text-micro text-accent/60 transition-colors hover:border-accent/35 hover:text-accent/80 disabled:opacity-30"
+                          >
+                            <Image size={10} />
+                            {sharingAllImage ? "分享中…" : "分享 PNG"}
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -263,7 +486,7 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
                                           </span>
                                         )}
                                       </div>
-                                      <p className="mt-0.5 text-xs leading-relaxed text-text-muted/70 line-clamp-3">
+                                      <p className="mt-0.5 text-xs leading-relaxed whitespace-pre-wrap text-text-muted/70 line-clamp-3">
                                         {f.content}
                                       </p>
                                     </div>
@@ -281,29 +504,110 @@ export default function ArchivePanel({ frames, onOpenChange }: Props) {
 
               {/* Bottom bar — export selected */}
               {selectedIds.size > 0 && (
-                <div className="flex items-center gap-2 border-t border-border-soft px-5 py-3">
-                  <Download size={12} className="text-text-muted/50" />
-                  <span className="flex-1 text-xs text-text-muted/60">
-                    导出已选 {selectedFrames.length} 帧
-                  </span>
-                  <div className="flex gap-1.5">
+                <div className="border-t border-border-soft px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+                  <div className="mb-2 flex min-w-0 items-center gap-2">
+                    <Download size={12} className="shrink-0 text-text-muted/50" />
+                    <span className="min-w-0 flex-1 text-xs text-text-muted/60">
+                      导出已选 {selectedFrames.length} 帧
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
                     {EXPORT_BTNS.map(({ label, icon, fn }) => (
                       <button
                         key={label}
-                        onClick={() => fn(selectedFrames, exportOpts)}
-                        className="flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-2.5 py-1 text-micro transition-colors hover:bg-accent/20 text-accent"
+                        data-testid={`archive-selected-export-${label.toLowerCase()}`}
+                        onClick={() => handleFormatClick(label, fn, selectedFrames)}
+                        disabled={textExporting}
+                        className={`flex min-w-0 items-center gap-1 rounded border px-1.5 py-0.5 text-micro transition-colors ${
+                          confirmingFormat === label
+                            ? "border-accent/40 bg-accent/15 text-accent"
+                            : "border-accent/30 bg-accent/10 text-accent hover:bg-accent/20"
+                        } disabled:opacity-40`}
                       >
-                        {icon}
-                        {label}
+                        {confirmingFormat === label ? `导出为 ${label}？` : label}
                       </button>
                     ))}
+                    {selectedFrames.length === 1 && (
+                      <>
+                        <button
+                          onClick={handleSaveImage}
+                          disabled={exportingImage}
+                          className="flex min-w-0 items-center gap-1 rounded border border-accent/30 bg-accent/10 px-1.5 py-0.5 text-micro text-accent transition-colors hover:bg-accent/20 disabled:opacity-40"
+                        >
+                          <Image size={10} />
+                          {exportingImage ? "保存中…" : "保存 PNG"}
+                        </button>
+                        {canShare() && (
+                          <button
+                            onClick={handleShareImage}
+                            disabled={sharingImage}
+                            className="flex min-w-0 items-center gap-1 rounded border border-accent/30 bg-accent/10 px-1.5 py-0.5 text-micro text-accent transition-colors hover:bg-accent/20 disabled:opacity-40"
+                          >
+                            <Image size={10} />
+                            {sharingImage ? "分享中…" : "分享 PNG"}
+                          </button>
+                        )}
+                      </>
+                    )}
+                    {selectedFrames.length >= 2 && selectedFrames.length <= MAX_COLLECTION_FRAMES && (
+                      <>
+                        <button
+                          onClick={handleSaveCollection}
+                          disabled={exportingCollection}
+                          className="flex min-w-0 items-center gap-1 rounded border border-accent/30 bg-accent/10 px-1.5 py-0.5 text-micro text-accent transition-colors hover:bg-accent/20 disabled:opacity-40"
+                        >
+                          <Image size={10} />
+                          {exportingCollection ? "保存中…" : `长图(${selectedFrames.length})`}
+                        </button>
+                        {canShare() && (
+                          <button
+                            onClick={handleShareCollection}
+                            disabled={sharingCollection}
+                            className="flex min-w-0 items-center gap-1 rounded border border-accent/30 bg-accent/10 px-1.5 py-0.5 text-micro text-accent transition-colors hover:bg-accent/20 disabled:opacity-40"
+                          >
+                            <Image size={10} />
+                            {sharingCollection ? "分享中…" : `分享(${selectedFrames.length})`}
+                          </button>
+                        )}
+                      </>
+                    )}
+                    {selectedFrames.length > MAX_COLLECTION_FRAMES && (
+                      <span
+                        className="text-micro text-text-muted/40 px-1"
+                        title={`长图导出最多支持 ${MAX_COLLECTION_FRAMES} 帧`}
+                      >
+                        长图≤{MAX_COLLECTION_FRAMES}帧
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
+
+              {/* Hidden export cards — selection-based */}
+              {singleFrame && (
+                <FrameImageExport ref={exportRef} frame={singleFrame} themeId={themeId} />
+              )}
+              {selectedFrames.length >= 2 && selectedFrames.length <= MAX_COLLECTION_FRAMES && (
+                <FrameCollectionImageExport ref={collectionRef} frames={collectionFrames} themeId={themeId} />
+              )}
+
+              {/* Hidden export cards — overview (all frames) */}
+              {frames.length === 1 && (
+                <FrameImageExport ref={overviewSingleRef} frame={frames[0]} themeId={themeId} />
+              )}
+              {frames.length >= 2 && frames.length <= MAX_COLLECTION_FRAMES && (
+                <FrameCollectionImageExport ref={overviewCollectionRef} frames={frames} themeId={themeId} />
+              )}
             </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+              </>
+            )}
+            </AnimatePresence>
+
+            <StatusToast message={toast} />
+          </div>
+        </>,
+        document.body,
+      )}
     </>
   );
 }

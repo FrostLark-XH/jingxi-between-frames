@@ -6,6 +6,7 @@ import {
   ThemeTokens,
   themes,
   DEFAULT_THEME,
+  THEME_MIGRATION,
   applyThemeToDocument,
 } from "@/lib/themes";
 
@@ -23,18 +24,27 @@ function loadThemeId(): ThemeId {
   if (typeof window === "undefined") return DEFAULT_THEME;
   try {
     const raw = localStorage.getItem(THEME_STORAGE_KEY);
-    if (raw && themes[raw as ThemeId]) return raw as ThemeId;
+    if (raw) {
+      // Migrate old theme names
+      if (raw in THEME_MIGRATION) {
+        const migrated = THEME_MIGRATION[raw];
+        localStorage.setItem(THEME_STORAGE_KEY, migrated);
+        return migrated;
+      }
+      if (themes[raw as ThemeId]) return raw as ThemeId;
+    }
   } catch { /* ignore */ }
   return DEFAULT_THEME;
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [themeId, setThemeIdState] = useState<ThemeId>(DEFAULT_THEME);
+  // Lazy initializer reads localStorage synchronously during first render,
+  // matching the data-theme already set by the inline <script> in layout.tsx.
+  // This prevents a hydration mismatch flash (the "theme tearing" bug).
+  const [themeId, setThemeIdState] = useState<ThemeId>(loadThemeId);
   const [mounted, setMounted] = useState(false);
 
-  // Hydrate from localStorage on mount
   useEffect(() => {
-    setThemeIdState(loadThemeId());
     setMounted(true);
   }, []);
 
@@ -43,14 +53,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!mounted) return;
     applyThemeToDocument(themes[themeId]);
 
-    // Update <meta name="theme-color"> for browser chrome
     const meta = document.querySelector('meta[name="theme-color"]');
+    const color = themes[themeId].bgBase;
     if (meta) {
-      meta.setAttribute("content", themes[themeId].bgBase);
+      meta.setAttribute("content", color);
     } else {
       const newMeta = document.createElement("meta");
       newMeta.name = "theme-color";
-      newMeta.content = themes[themeId].bgBase;
+      newMeta.content = color;
       document.head.appendChild(newMeta);
     }
   }, [themeId, mounted]);

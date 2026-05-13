@@ -16,14 +16,15 @@
 
 ## 核心功能
 
-- 文字记录生活碎片，保存时自动首行缩进
+- 文字记录生活碎片，保存原始文本（AI 不修改用户原文）
 - AI 显影：为每一帧生成摘要、标签（2-3 个）、情绪基调（10 种分类）
 - 时间胶片：日/月/年三级时间尺度浏览，滚动导轨 + 微光节点
+- 镜中人：基于近期记录 AI 生成短篇镜中故事，漂浮词 + 线索词 + 氛围词
 - 3 套主题：冷灰暗房 / 暖玫旧纸 / 晨雾米纸
 - 帧详情编辑、标签管理、软删除回收站（7 天自动清除）
 - 重新显影：编辑原文后可一键重新调用 AI
 - 导出系统：单帧/多帧/档案批量导出 PNG 卡片 + JSON/MD/TXT
-- PWA 离线支持，移动端优先
+- PWA 离线支持，移动端优先，统一响应式 Header
 
 ## 技术栈
 
@@ -46,7 +47,8 @@
 | V0.6 | 真实 LLM 显影引擎，后台静默 AI 处理 |
 | V0.7 | AI 字段收口（summary/tags/tone），重新显影，暗房显影师 prompt |
 | V0.8 | 单帧/多帧 PNG 导出卡片，ArchivePanel 导出系统 |
-| **V0.9** | 导出卡片信息层级重构（原文为主），PWA 真机修复，两步确认导出 |
+| V0.9 | 导出卡片信息层级重构，PWA 真机修复，两步确认导出，镜中人 AI 故事生成 |
+| **V0.4** | 稳定性优化：存储安全层、AI 安全层、v3 迁移、响应式 Header（进行中） |
 
 ## 本地运行
 
@@ -66,11 +68,15 @@ npm run build
 
 ```
 v0.3/
-├── app/            # Next.js App Router（单路由 "/"）
-├── components/     # 17 个组件
-├── hooks/          # useAppState / useTheme / useIsMobile
-├── lib/            # 主题、导出、Shader
-├── services/ai/    # AI Provider（real → mock fallback）
-├── data/           # MemoryFrame 类型定义
-└── tests/          # Playwright E2E
+├── app/            # Next.js App Router（页面 + API 路由）
+├── src/            # 领域模型 + 持久化（domain/frame, domain/time, lib/storage, lib/validation）
+├── components/     # 24 个 React 组件
+├── hooks/          # useAppState / useTheme / useIsMobile / useFirstVisitHint
+├── lib/            # 主题、导出、限流、埋点、Shader
+├── services/ai/    # AI 显影 + 镜中人服务层（real → mock fallback）
+├── data/           # MemoryFrame 类型定义与聚合
+├── public/         # PWA 图标与静态资源
+├── docs/           # 项目文档（freeze / product / ops）
+├── tests/          # Playwright E2E 测试
+└── .github/        # CI/CD（Cloudflare + Vercel 自动部署）
 ```

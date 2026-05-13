@@ -12,6 +12,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+dev-*.log
 
 # misc
 .DS_Store
@@ -23,6 +24,7 @@ yarn-error.log*
 
 # vercel
 .vercel
+.wrangler/
 
 # typescript
 *.tsbuildinfo
@@ -32,3 +34,6 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 .playwright-mcp/
+
+# test output artifacts
+tests/*.png
