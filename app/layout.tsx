@@ -13,10 +13,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icons/icon-192-v2.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512-v2.png", sizes: "512x512", type: "image/png" },
+      { url: "/icons/jingxi-icon-192-20260515.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/jingxi-icon-512-20260515.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/icons/apple-touch-icon-v2.png", sizes: "180x180" }],
+    apple: [{ url: "/icons/jingxi-apple-touch-20260515.png", sizes: "180x180" }],
   },
   openGraph: {
     title: "镜隙之间",

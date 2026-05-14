@@ -2,7 +2,7 @@
   "name": "镜隙之间",
   "short_name": "镜隙",
   "description": "让时间慢慢显影",
-  "start_url": "/?source=pwa-v2",
+  "start_url": "/?source=pwa-20260515",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -10,18 +10,18 @@
   "theme_color": "#13161A",
   "icons": [
     {
-      "src": "/icons/icon-192-v2.png",
+      "src": "/icons/jingxi-icon-192-20260515.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/icons/icon-512-v2.png",
+      "src": "/icons/jingxi-icon-512-20260515.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-maskable-512-v2.png",
+      "src": "/icons/jingxi-maskable-512-20260515.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
